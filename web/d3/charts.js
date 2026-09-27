@@ -1,0 +1,382 @@
+/*
+ * D3.js version — every mark, axis, tooltip and interaction is built by hand.
+ * Receives the same view model as the ECharts version (see common.js).
+ */
+(function () {
+  "use strict";
+  const { fmt } = window.App;
+  const tipEl = document.getElementById("tip");
+  let T; // theme tokens for the current render
+
+  /* ---------------- helpers ---------------- */
+  function frame(id, minW = 0) {
+    const el = document.getElementById(id);
+    el.innerHTML = "";
+    const w = Math.max(el.clientWidth, minW), h = el.clientHeight;
+    const svg = d3.select(el).append("svg")
+      .attr("width", w).attr("height", h).attr("viewBox", `0 0 ${w} ${h}`)
+      .style("display", "block").style("font-family", T.fontBody);
+    return { svg, w, h };
+  }
+  function tip(html, ev) {
+    tipEl.innerHTML = html;
+    tipEl.style.opacity = 1;
+    const r = tipEl.getBoundingClientRect();
+    let x = ev.clientX + 14, y = ev.clientY + 14;
+    if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - 14;
+    if (y + r.height > innerHeight - 8) y = ev.clientY - r.height - 14;
+    tipEl.style.left = x + "px"; tipEl.style.top = y + "px";
+  }
+  function hideTip() { tipEl.style.opacity = 0; }
+  const row = (k, v, color) =>
+    `<div class="t-row"><span>${color ? `<i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${color};margin-right:6px"></i>` : ""}${k}</span><span>${v}</span></div>`;
+
+  function styleAxis(g, { grid = false, gridLen = 0, horizontal = false } = {}) {
+    g.select(".domain").remove();
+    g.selectAll(".tick text").attr("fill", T.ink3).style("font-size", "11px").style("font-family", T.fontMono);
+    g.selectAll(".tick line").attr("stroke", T.grid);
+    if (grid) g.selectAll(".tick line").attr(horizontal ? "y2" : "x2", horizontal ? -gridLen : gridLen);
+  }
+  // bar with 4px rounded data-end only (anchored end stays square)
+  function hBarPath(x, y, w, h, r = 4) {
+    r = Math.min(r, w, h / 2);
+    if (w <= 0) return "";
+    return `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x}Z`;
+  }
+  function vBarPath(x, y0, y1, w, r = 4) { // y0 = baseline, y1 = data end (can be above or below)
+    const up = y1 < y0, hgt = Math.abs(y0 - y1);
+    r = Math.min(r, w / 2, hgt);
+    if (hgt === 0) return "";
+    return up
+      ? `M${x},${y0}V${y1 + r}Q${x},${y1} ${x + r},${y1}H${x + w - r}Q${x + w},${y1} ${x + w},${y1 + r}V${y0}Z`
+      : `M${x},${y0}V${y1 - r}Q${x},${y1} ${x + r},${y1}H${x + w - r}Q${x + w},${y1} ${x + w},${y1 - r}V${y0}Z`;
+  }
+
+  /* ---------------- 1. cases per year (area + line + crosshair) ---------------- */
+  function trend(vm) {
+    const { svg, w, h } = frame("ch-trend");
+    const m = { t: 14, r: 56, b: 26, l: 52 };
+    const data = vm.byYear;
+    const x = d3.scalePoint(data.map(d => d.year), [m.l, w - m.r]);
+    const y = d3.scaleLinear([0, d3.max(data, d => d.cases) * 1.12], [h - m.b, m.t]).nice();
+    svg.append("g").attr("transform", `translate(${m.l},0)`)
+      .call(d3.axisLeft(y).ticks(4).tickFormat(fmt.compact).tickSize(0).tickPadding(8))
+      .call(g => { styleAxis(g); g.selectAll(".tick").append("line").attr("x2", w - m.l - m.r).attr("stroke", T.grid); g.selectAll(".tick line").lower(); });
+    svg.append("g").attr("transform", `translate(0,${h - m.b})`)
+      .call(d3.axisBottom(x).tickValues(w < 520 ? data.map(d => d.year).filter((y, i) => i % 2 === 0) : null).tickSize(0).tickPadding(8).tickFormat(d => String(d)))
+      .call(g => styleAxis(g));
+    const area = d3.area().x(d => x(d.year)).y0(y(0)).y1(d => y(d.cases)).curve(d3.curveMonotoneX);
+    const line = d3.line().x(d => x(d.year)).y(d => y(d.cases)).curve(d3.curveMonotoneX);
+    svg.append("path").datum(data).attr("d", area).attr("fill", T.s1).attr("opacity", .12);
+    svg.append("path").datum(data).attr("d", line).attr("fill", "none").attr("stroke", T.s1).attr("stroke-width", 2);
+    const last = data[data.length - 1];
+    svg.append("circle").attr("cx", x(last.year)).attr("cy", y(last.cases)).attr("r", 4.5)
+      .attr("fill", T.s1).attr("stroke", T.surface).attr("stroke-width", 2);
+    svg.append("text").attr("x", x(last.year) + 8).attr("y", y(last.cases) + 4)
+      .attr("fill", T.ink).style("font", `600 12px ${T.fontMono}`).text(fmt.compact(last.cases));
+    crosshair(svg, x, data, m, h, (d) => [[x(d.year), y(d.cases), T.s1]],
+      d => `<b>ปี ${d.year}</b>${row("คดีที่รับแจ้ง", fmt.int(d.cases), T.s1)}`);
+  }
+
+  // shared crosshair for line charts
+  function crosshair(svg, x, data, m, h, pts, html) {
+    const g = svg.append("g").style("pointer-events", "none").attr("opacity", 0);
+    const vline = g.append("line").attr("y1", m.t).attr("y2", h - m.b).attr("stroke", T.ink3).attr("stroke-dasharray", "3 3");
+    const dots = g.append("g");
+    const xs = data.map(d => x(d.year));
+    svg.append("rect").attr("x", m.l - 10).attr("y", 0).attr("width", xs[xs.length - 1] - m.l + 20).attr("height", h)
+      .attr("fill", "transparent")
+      .on("pointermove", ev => {
+        const [mx] = d3.pointer(ev);
+        const i = d3.minIndex(xs, v => Math.abs(v - mx));
+        const d = data[i];
+        g.attr("opacity", 1);
+        vline.attr("x1", xs[i]).attr("x2", xs[i]);
+        dots.selectAll("circle").data(pts(d)).join("circle")
+          .attr("cx", p => p[0]).attr("cy", p => p[1]).attr("r", 4.5)
+          .attr("fill", p => p[2]).attr("stroke", T.surface).attr("stroke-width", 2);
+        tip(html(d), ev);
+      })
+      .on("pointerleave", () => { g.attr("opacity", 0); hideTip(); });
+  }
+
+  /* ---------------- 2. chargesheet & conviction rate per year ---------------- */
+  function rates(vm) {
+    const { svg, w, h } = frame("ch-rates");
+    const m = { t: 14, r: 96, b: 26, l: 44 };
+    const data = vm.byYear;
+    const x = d3.scalePoint(data.map(d => d.year), [m.l, w - m.r]);
+    const lo = d3.min(data, d => d.convRate), hi = d3.max(data, d => d.chgRate);
+    const y = d3.scaleLinear([Math.max(0, lo - .06), Math.min(1, hi + .04)], [h - m.b, m.t]).nice();
+    svg.append("g").attr("transform", `translate(${m.l},0)`)
+      .call(d3.axisLeft(y).ticks(5).tickFormat(d => Math.round(d * 100) + "%").tickSize(0).tickPadding(8))
+      .call(g => { styleAxis(g); g.selectAll(".tick").append("line").attr("x2", w - m.l - m.r).attr("stroke", T.grid); });
+    svg.append("g").attr("transform", `translate(0,${h - m.b})`)
+      .call(d3.axisBottom(x).tickValues(w < 520 ? data.map(d => d.year).filter((y, i) => i % 2 === 0) : null).tickSize(0).tickPadding(8).tickFormat(String)).call(g => styleAxis(g));
+    const series = [
+      { key: "chgRate", label: "สั่งฟ้อง", color: T.s1 },
+      { key: "convRate", label: "ลงโทษ", color: T.s2 }
+    ];
+    for (const s of series) {
+      svg.append("path").datum(data)
+        .attr("d", d3.line().x(d => x(d.year)).y(d => y(d[s.key])).curve(d3.curveMonotoneX))
+        .attr("fill", "none").attr("stroke", s.color).attr("stroke-width", 2);
+      const last = data[data.length - 1];
+      svg.append("text").attr("x", x(last.year) + 8).attr("y", y(last[s.key]) + 4)
+        .attr("fill", T.ink2).style("font", `500 11.5px ${T.fontBody}`)
+        .text(`${s.label} ${fmt.pct(last[s.key])}`);
+    }
+    crosshair(svg, x, data, m, h, d => series.map(s => [x(d.year), y(d[s.key]), s.color]),
+      d => `<b>ปี ${d.year}</b>${row("อัตราสั่งฟ้อง", fmt.pct(d.chgRate), T.s1)}${row("อัตราลงโทษ", fmt.pct(d.convRate), T.s2)}`);
+  }
+
+  /* ---------------- 3. crime rate by state (horizontal bars, click to filter) ---------------- */
+  function states(vm) {
+    const { svg, w, h } = frame("ch-state");
+    const m = { t: 4, r: 48, b: 8, l: 104 };
+    const data = vm.byState;
+    const y = d3.scaleBand(data.map(d => d.key), [m.t, h - m.b]).padding(.28);
+    const x = d3.scaleLinear([0, d3.max(data, d => d.value)], [m.l, w - m.r]);
+    const selected = vm.sel.state;
+    const g = svg.append("g").selectAll("g").data(data).join("g").style("cursor", "pointer")
+      .on("click", (ev, d) => App.setState(d.i))
+      .on("pointermove", (ev, d) => tip(stateTip(d), ev))
+      .on("pointerleave", hideTip);
+    g.append("rect").attr("x", 0).attr("width", w).attr("y", d => y(d.key) - 3).attr("height", y.bandwidth() + 6).attr("fill", "transparent");
+    g.append("path").attr("d", d => hBarPath(m.l, y(d.key), x(d.value) - m.l, y.bandwidth()))
+      .attr("fill", d => selected === null || selected === d.i ? T.accent : T.muted);
+    g.append("text").attr("x", m.l - 8).attr("y", d => y(d.key) + y.bandwidth() / 2).attr("dy", ".35em")
+      .attr("text-anchor", "end").attr("fill", d => selected === d.i ? T.ink : T.ink2)
+      .style("font", d => `${selected === d.i ? 600 : 400} 12px ${T.fontBody}`).text(d => d.label);
+    g.append("text").attr("x", d => x(d.value) + 6).attr("y", d => y(d.key) + y.bandwidth() / 2).attr("dy", ".35em")
+      .attr("fill", T.ink2).style("font", `500 11px ${T.fontMono}`).text(d => vm.metric.fmt(d.value));
+  }
+
+  function stateTip(d) {
+    return `<b>${d.label}</b> <span style="color:${T.ink3}">${d.key}</span>
+      ${row("อาชญากรรม/แสนคน/ปี", fmt.num(d.rate))}${row("อัตราสั่งฟ้อง", fmt.pct(d.chgRate))}
+      ${row("อัตราลงโทษ", fmt.pct(d.convRate))}${row("กลุ่มยุติธรรมสูง", fmt.pct(d.high))}${row("คดีรวม", fmt.int(d.cases))}`;
+  }
+
+  /* ---------------- 3b. choropleth map of India ---------------- */
+  function map(vm) {
+    const { svg, w, h } = frame("ch-map");
+    const byName = new Map(vm.byState.map(d => [d.key, d]));
+    const m = vm.metric;
+    const color = d3.scaleLinear([m.min, (m.min + m.max) / 2, m.max], T.seq).interpolate(d3.interpolateLab);
+    const proj = d3.geoMercator().fitExtent([[8, 8], [w - 8, h - 8]], vm.geo);
+    const path = d3.geoPath(proj);
+    const sel = vm.sel.state;
+    const feats = vm.geo.features;
+    const g = svg.append("g");
+    g.selectAll("path").data(feats).join("path")
+      .attr("d", path)
+      .attr("fill", f => byName.has(f.properties.name) ? color(byName.get(f.properties.name).value) : T.nodata)
+      .attr("stroke", T.surface).attr("stroke-width", .8)
+      .style("cursor", f => byName.has(f.properties.name) ? "pointer" : "default")
+      .on("click", (ev, f) => { const d = byName.get(f.properties.name); if (d) App.setState(d.i); })
+      .on("pointermove", (ev, f) => {
+        const d = byName.get(f.properties.name);
+        tip(d ? stateTip(d) : `<b>${f.properties.name}</b><br><span style="color:${T.ink3}">ไม่มีในชุดข้อมูล</span>`, ev);
+      })
+      .on("pointerleave", hideTip);
+    // selected state on top with an ink outline
+    if (sel !== null) {
+      const f = feats.find(f => f.properties.name === App.data.states[sel]);
+      if (f) g.append("path").attr("d", path(f)).attr("fill", "none").attr("stroke", T.ink).attr("stroke-width", 2).style("pointer-events", "none");
+    }
+    // value labels on the 12 states (names are in the tooltip and the bar chart beside the map)
+    const t = d3.scaleLinear([m.min, m.max], [0, 1]);
+    const lab = svg.append("g").style("pointer-events", "none");
+    for (const f of feats) {
+      const d = byName.get(f.properties.name);
+      if (!d) continue;
+      const [cx, cy] = path.centroid(f);
+      const dark = t(d.value) > .55;
+      lab.append("text").attr("x", cx).attr("y", cy).attr("dy", ".35em").attr("text-anchor", "middle")
+        .attr("fill", dark ? T.surface : T.ink).style("font", `600 11px ${T.fontMono}`).text(m.fmt(d.value));
+    }
+  }
+
+  /* ---------------- 4. case outcome by crime type (100% stacked) ---------------- */
+  function pipeline(vm) {
+    const { svg, w, h } = frame("ch-pipeline");
+    const m = { t: 4, r: 12, b: 22, l: 120 };
+    const data = vm.byCrime;
+    const keys = [["convicted", "ลงโทษ"], ["chargedOnly", "สั่งฟ้องแต่ยังไม่ลงโทษ"], ["notCharged", "ไม่ถูกสั่งฟ้อง"]];
+    const y = d3.scaleBand(data.map(d => d.key), [m.t, h - m.b]).padding(.24);
+    const x = d3.scaleLinear([0, 1], [m.l, w - m.r]);
+    svg.append("g").attr("transform", `translate(0,${h - m.b})`)
+      .call(d3.axisBottom(x).ticks(5).tickFormat(d => d * 100 + "%").tickSize(0).tickPadding(8)).call(g => styleAxis(g));
+    const sel = vm.sel.crime;
+    const rows = svg.append("g").selectAll("g").data(data).join("g").style("cursor", "pointer")
+      .attr("opacity", d => sel === null || sel === d.i ? 1 : .35)
+      .on("click", (ev, d) => App.setCrime(d.i))
+      .on("pointermove", (ev, d) => tip(`<b>${d.label}</b> <span style="color:${T.ink3}">${d.key}</span>
+          ${keys.map(([k, l], j) => row(l, fmt.pct(d[k]), T.pipe[j])).join("")}${row("คดีรวม", fmt.int(d.cases))}`, ev))
+      .on("pointerleave", hideTip);
+    rows.append("rect").attr("x", 0).attr("width", w).attr("y", d => y(d.key) - 3).attr("height", y.bandwidth() + 6).attr("fill", "transparent");
+    rows.each(function (d) {
+      let acc = 0;
+      const gg = d3.select(this);
+      keys.forEach(([k], j) => {
+        const x0 = x(acc), x1 = x(acc + d[k]);
+        const last = j === keys.length - 1;
+        const wSeg = Math.max(0, x1 - x0 - (last ? 0 : 2)); // 2px surface gap between segments
+        if (last) gg.append("path").attr("d", hBarPath(x0, y(d.key), wSeg, y.bandwidth())).attr("fill", T.pipe[j]);
+        else gg.append("rect").attr("x", x0).attr("y", y(d.key)).attr("width", wSeg).attr("height", y.bandwidth()).attr("fill", T.pipe[j]);
+        acc += d[k];
+      });
+      gg.append("text").attr("x", x(0) + 8).attr("y", y(d.key) + y.bandwidth() / 2).attr("dy", ".35em")
+        .attr("fill", T.surface).style("font", `600 11px ${T.fontMono}`).text(fmt.pct(d.convicted));
+    });
+    rows.append("text").attr("x", m.l - 8).attr("y", d => y(d.key) + y.bandwidth() / 2).attr("dy", ".35em")
+      .attr("text-anchor", "end").attr("fill", T.ink2).style("font", `400 12px ${T.fontBody}`).text(d => d.label);
+  }
+
+  /* ---------------- 5. heatmap state x crime ---------------- */
+  function heat(vm) {
+    const el = document.getElementById("ch-heat");
+    el.style.overflowX = "auto";
+    const { svg, w, h } = frame("ch-heat", 980);
+    const m = { t: 44, r: 8, b: 8, l: 108 };
+    const rowsK = vm.heatStates.map(d => d.i), cols = vm.heatCrimes.map(d => d.i);
+    const y = d3.scaleBand(rowsK, [m.t, h - m.b]).padding(.06);
+    const x = d3.scaleBand(cols, [m.l, w - m.r]).padding(.06);
+    const ext = d3.extent(vm.heat, d => d.rate);
+    const color = d3.scaleLinear([ext[0], (ext[0] + ext[1]) / 2, ext[1]], T.seq).interpolate(d3.interpolateLab);
+    const t = d3.scaleLinear(ext, [0, 1]);
+    const { state: ss, crime: sc } = vm.sel;
+    svg.append("g").selectAll("text").data(vm.heatCrimes).join("text")
+      .attr("x", d => x(d.i) + x.bandwidth() / 2).attr("y", m.t - 10).attr("text-anchor", "middle")
+      .attr("fill", d => sc === d.i ? T.ink : T.ink2).style("font", d => `${sc === d.i ? 600 : 400} 11.5px ${T.fontBody}`)
+      .text(d => d.label);
+    svg.append("g").selectAll("text").data(vm.heatStates).join("text")
+      .attr("x", m.l - 8).attr("y", d => y(d.i) + y.bandwidth() / 2).attr("dy", ".35em").attr("text-anchor", "end")
+      .attr("fill", d => ss === d.i ? T.ink : T.ink2).style("font", d => `${ss === d.i ? 600 : 400} 12px ${T.fontBody}`)
+      .text(d => d.label);
+    const cells = svg.append("g").selectAll("g").data(vm.heat).join("g").style("cursor", "pointer")
+      .on("click", (ev, d) => App.setBoth(d.s, d.c))
+      .on("pointermove", (ev, d) => tip(`<b>${fmt.state(App.data.states[d.s])} · ${fmt.crime(App.data.crimes[d.c])}</b>
+          ${row("อาชญากรรม/แสนคน/ปี", fmt.num(d.rate, 2))}${row("คดีรวม 10 ปี", fmt.int(d.cases))}`, ev))
+      .on("pointerleave", hideTip);
+    cells.append("rect").attr("x", d => x(d.c)).attr("y", d => y(d.s)).attr("width", x.bandwidth()).attr("height", y.bandwidth())
+      .attr("rx", 3).attr("fill", d => color(d.rate))
+      .attr("stroke", d => (ss === d.s && (sc === null || sc === d.c)) || (sc === d.c && ss === null) ? T.ink : "none")
+      .attr("stroke-width", 2);
+    // high end of the ramp is far from the surface in both themes, so use surface-colored text there
+    cells.append("text").attr("x", d => x(d.c) + x.bandwidth() / 2).attr("y", d => y(d.s) + y.bandwidth() / 2).attr("dy", ".35em")
+      .attr("text-anchor", "middle").style("font", `500 11px ${T.fontMono}`).style("pointer-events", "none")
+      .attr("fill", d => t(d.rate) > .55 ? T.surface : T.ink)
+      .text(d => fmt.num(d.rate, 2));
+  }
+
+  /* ---------------- 6. cluster profile (grouped bars on z-scores) ---------------- */
+  function clusterProfile(vm) {
+    const { svg, w, h } = frame("ch-cprofile");
+    const m = { t: 10, r: 8, b: 30, l: 40 };
+    const vars = [["Chargesheet_Rate", "อัตราสั่งฟ้อง"], ["Convictions_Rate", "อัตราลงโทษ"], ["Crime_Rate_per_100k", "อาชญากรรม/แสน"], ["Justice_index", "Justice index"]];
+    const x0 = d3.scaleBand(vars.map(v => v[0]), [m.l, w - m.r]).paddingInner(.22).paddingOuter(.06);
+    const x1 = d3.scaleBand(vm.clusters.map((c, i) => i), [0, x0.bandwidth()]).padding(.12);
+    const zmax = d3.max(vm.clusters, c => d3.max(vars, v => Math.abs(c.z[v[0]])));
+    const y = d3.scaleLinear([-zmax, zmax], [h - m.b, m.t]).nice();
+    svg.append("g").attr("transform", `translate(${m.l},0)`)
+      .call(d3.axisLeft(y).ticks(6).tickSize(0).tickPadding(8).tickFormat(d => (d > 0 ? "+" : "") + d))
+      .call(g => { styleAxis(g); g.selectAll(".tick").append("line").attr("x2", w - m.l - m.r).attr("stroke", T.grid); });
+    svg.append("line").attr("x1", m.l).attr("x2", w - m.r).attr("y1", y(0)).attr("y2", y(0)).attr("stroke", T.ink3);
+    svg.append("g").selectAll("text").data(vars).join("text")
+      .attr("x", v => x0(v[0]) + x0.bandwidth() / 2).attr("y", h - 8).attr("text-anchor", "middle")
+      .attr("fill", T.ink2).style("font", `400 12px ${T.fontBody}`).text(v => v[1]);
+    const g = svg.append("g").selectAll("g").data(vars).join("g").attr("transform", v => `translate(${x0(v[0])},0)`);
+    g.selectAll("path").data(v => vm.clusters.map((c, i) => ({ v, c, i }))).join("path")
+      .attr("d", d => vBarPath(x1(d.i), y(0), y(d.c.z[d.v[0]]), x1.bandwidth()))
+      .attr("fill", d => T.cluster[d.i])
+      .on("pointermove", (ev, d) => tip(`<b>${d.c.name}</b> · ${d.v[1]}
+          ${row("ค่าเฉลี่ยกลุ่ม", fmt.num(d.c.mean[d.v[0]], 2))}${row("Z-score", (d.c.z[d.v[0]] > 0 ? "+" : "") + d.c.z[d.v[0]].toFixed(2), T.cluster[d.i])}`, ev))
+      .on("pointerleave", hideTip);
+  }
+
+  /* ---------------- 7. cluster share per state (100% stacked) ---------------- */
+  function clusterState(vm) {
+    const { svg, w, h } = frame("ch-cstate");
+    const m = { t: 4, r: 12, b: 22, l: 104 };
+    const data = vm.clusterByState;
+    const y = d3.scaleBand(data.map(d => d.key), [m.t, h - m.b]).padding(.24);
+    const x = d3.scaleLinear([0, 1], [m.l, w - m.r]);
+    svg.append("g").attr("transform", `translate(0,${h - m.b})`)
+      .call(d3.axisBottom(x).ticks(5).tickFormat(d => d * 100 + "%").tickSize(0).tickPadding(8)).call(g => styleAxis(g));
+    const sel = vm.sel.state;
+    const rows = svg.append("g").selectAll("g").data(data).join("g").style("cursor", "pointer")
+      .attr("opacity", d => sel === null || sel === d.i ? 1 : .35)
+      .on("click", (ev, d) => App.setState(d.i))
+      .on("pointermove", (ev, d) => tip(`<b>${d.label}</b>${vm.clusters.map((c, j) => row(c.name, fmt.pct(d.share[j]), T.cluster[j])).join("")}`, ev))
+      .on("pointerleave", hideTip);
+    rows.append("rect").attr("x", 0).attr("width", w).attr("y", d => y(d.key) - 3).attr("height", y.bandwidth() + 6).attr("fill", "transparent");
+    rows.each(function (d) {
+      let acc = 0;
+      const gg = d3.select(this);
+      d.share.forEach((s, j) => {
+        const x0 = x(acc), x1 = x(acc + s), last = j === d.share.length - 1;
+        const wSeg = Math.max(0, x1 - x0 - (last ? 0 : 2));
+        if (last) gg.append("path").attr("d", hBarPath(x0, y(d.key), wSeg, y.bandwidth())).attr("fill", T.cluster[j]);
+        else gg.append("rect").attr("x", x0).attr("y", y(d.key)).attr("width", wSeg).attr("height", y.bandwidth()).attr("fill", T.cluster[j]);
+        acc += s;
+      });
+    });
+    rows.append("text").attr("x", m.l - 8).attr("y", d => y(d.key) + y.bandwidth() / 2).attr("dy", ".35em")
+      .attr("text-anchor", "end").attr("fill", T.ink2).style("font", `400 12px ${T.fontBody}`).text(d => d.label);
+  }
+
+  /* ---------------- 8. scatter small multiples ---------------- */
+  function scatter(vm) {
+    const el = document.getElementById("ch-scatter");
+    const cols = el.clientWidth < 640 ? 2 : 4;
+    const rowsN = Math.ceil(4 / cols);
+    el.style.height = (rowsN * 270 + 10) + "px";
+    const { svg, w } = frame("ch-scatter");
+    const pw = w / cols, ph = 270;
+    const m = { t: 26, r: 12, b: 30, l: 40 };
+    const x = d3.scaleLinear([0, vm.scatterMax.x], [m.l, pw - m.r]).nice();
+    const y = d3.scaleLinear([0, vm.scatterMax.y], [ph - m.b, m.t]).nice();
+    vm.clusters.forEach((c, k) => {
+      const g = svg.append("g").attr("transform", `translate(${(k % cols) * pw},${Math.floor(k / cols) * ph})`);
+      g.append("text").attr("x", m.l).attr("y", 14).attr("fill", T.ink).style("font", `600 12.5px ${T.fontBody}`).text(c.name + "  ·  n=" + fmt.int(vm.scatter.filter(p => p.k === k).length));
+      g.append("circle").attr("cx", m.l - 10).attr("cy", 10).attr("r", 4).attr("fill", T.cluster[k]);
+      g.append("g").attr("transform", `translate(0,${ph - m.b})`)
+        .call(d3.axisBottom(x).ticks(4).tickSize(0).tickPadding(6)).call(a => styleAxis(a));
+      g.append("g").attr("transform", `translate(${m.l},0)`)
+        .call(d3.axisLeft(y).ticks(4).tickSize(0).tickPadding(6))
+        .call(a => { styleAxis(a); a.selectAll(".tick").append("line").attr("x2", pw - m.l - m.r).attr("stroke", T.grid); });
+      const others = vm.scatter.filter(p => p.k !== k), mine = vm.scatter.filter(p => p.k === k);
+      g.append("g").selectAll("circle").data(others).join("circle")
+        .attr("cx", p => x(p.x)).attr("cy", p => y(p.y)).attr("r", 2).attr("fill", T.muted);
+      g.append("g").selectAll("circle").data(mine).join("circle")
+        .attr("cx", p => x(p.x)).attr("cy", p => y(p.y)).attr("r", 3).attr("fill", T.cluster[k]).attr("fill-opacity", .75)
+        .attr("stroke", T.surface).attr("stroke-width", .6);
+      // nearest-point hover via Delaunay
+      if (mine.length) {
+        const del = d3.Delaunay.from(mine, p => x(p.x), p => y(p.y));
+        const ring = g.append("circle").attr("r", 6).attr("fill", "none").attr("stroke", T.ink).attr("stroke-width", 1.5).attr("opacity", 0);
+        g.append("rect").attr("x", m.l).attr("y", m.t).attr("width", pw - m.l - m.r).attr("height", ph - m.t - m.b).attr("fill", "transparent")
+          .on("pointermove", ev => {
+            const [mx, my] = d3.pointer(ev);
+            const p = mine[del.find(mx, my)];
+            ring.attr("cx", x(p.x)).attr("cy", y(p.y)).attr("opacity", 1);
+            tip(`<b>${p.district}</b> · ${fmt.state(App.data.states[p.s])}<br>${fmt.crime(App.data.crimes[p.c])} · ${p.year}
+              ${row("อาชญากรรม/แสน", fmt.num(p.x, 2), T.cluster[k])}${row("Justice index", fmt.num(p.y, 2))}${row("อัตราลงโทษ", p.conv + "%")}`, ev);
+          })
+          .on("pointerleave", () => { ring.attr("opacity", 0); hideTip(); });
+      }
+      g.append("text").attr("x", pw - m.r).attr("y", ph - 2).attr("text-anchor", "end").attr("fill", T.ink3)
+        .style("font", `400 10.5px ${T.fontBody}`).text("อาชญากรรม/แสน →");
+    });
+  }
+
+  window.Charts = {
+    render(vm, tokens) {
+      T = tokens;
+      map(vm); trend(vm); rates(vm); states(vm); pipeline(vm); heat(vm);
+      clusterProfile(vm); clusterState(vm); scatter(vm);
+    }
+  };
+})();

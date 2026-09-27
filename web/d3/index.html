@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>India Crime Atlas · D3.js</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="top-row">
+      <div>
+        <p class="eyebrow">Interactive Data Visualization · <!--LIB-->D3.js v7<!--/LIB--></p>
+        <h1>อาชญากรรมระดับอำเภอในอินเดีย 2014–2023</h1>
+        <p class="lede">12 รัฐ 300 อำเภอ 10 ประเภทคดี รวม 30,000 แถว พร้อมผลจัดกลุ่ม k-means (k=4) จาก RapidMiner
+          คลิกแท่ง แถว หรือช่องในกราฟเพื่อกรองข้อมูลทั้งหน้า</p>
+      </div>
+    </div>
+  </header>
+
+  <p id="app-status" class="loading">กำลังโหลดข้อมูล…</p>
+
+  <main id="app" hidden>
+    <div class="filters" role="search">
+      <div class="field">
+        <label for="f-state">รัฐ</label>
+        <select id="f-state"></select>
+      </div>
+      <div class="field">
+        <label for="f-crime">ประเภทคดี</label>
+        <select id="f-crime"></select>
+      </div>
+      <button id="f-reset" type="button">ล้างตัวกรอง</button>
+      <span class="filter-note" id="filter-note"></span>
+    </div>
+
+    <section class="kpis" aria-label="ตัวชี้วัดหลัก">
+      <div class="kpi"><div class="k-label">คดีที่รับแจ้ง</div><div class="k-value" id="kpi-cases">–</div><div class="k-sub">รวม 10 ปี</div></div>
+      <div class="kpi"><div class="k-label">อัตราสั่งฟ้อง (Chargesheet)</div><div class="k-value" id="kpi-chg">–</div><div class="k-sub">ของคดีที่รับแจ้ง</div></div>
+      <div class="kpi"><div class="k-label">อัตราลงโทษ (Conviction)</div><div class="k-value" id="kpi-conv">–</div><div class="k-sub">ของคดีที่รับแจ้ง</div></div>
+      <div class="kpi"><div class="k-label">อัตราอาชญากรรม</div><div class="k-value" id="kpi-rate">–</div><div class="k-sub" id="kpi-rate-sub">ต่อแสนคนต่อปี</div></div>
+    </section>
+
+    <div class="section-head">
+      <h2>ภาพรวมเชิงพื้นที่</h2>
+      <div class="field field-inline"><label for="f-metric">ตัวชี้วัดบนแผนที่</label><select id="f-metric"></select></div>
+    </div>
+    <div class="grid">
+      <article class="card wide">
+        <h3 id="map-title">แผนที่</h3>
+        <p class="sub" id="map-sub"></p>
+        <div class="legend">
+          <span id="map-min">–</span>
+          <span><i style="width:120px;background:linear-gradient(90deg,var(--seq-lo),var(--seq-mid),var(--seq-hi))"></i></span>
+          <span id="map-max">–</span>
+          <span><i style="background:var(--nodata);border:1px solid var(--line)"></i>ไม่มีในชุดข้อมูล</span>
+          <span style="color:var(--ink-3)">สีครอบช่วงค่าต่ำสุด–สูงสุดของ 12 รัฐ</span>
+        </div>
+        <div id="ch-map" class="chart map-box"></div>
+      </article>
+      <article class="card narrow">
+        <h3 id="state-title">รายรัฐ</h3>
+        <p class="sub" id="state-sub"></p>
+        <div id="ch-state" class="chart map-box"></div>
+      </article>
+    </div>
+
+    <div class="section-head"><h2>แนวโน้มรายปี</h2><p>ตามตัวกรองที่เลือก</p></div>
+    <div class="grid">
+      <article class="card">
+        <h3>จำนวนคดีที่รับแจ้งรายปี</h3>
+        <p class="sub">คดี · 2014–2023</p>
+        <div id="ch-trend" class="chart h-sm"></div>
+      </article>
+      <article class="card">
+        <h3>อัตราสั่งฟ้องและอัตราลงโทษรายปี</h3>
+        <div class="legend"><span><i class="line" style="background:var(--s1)"></i>อัตราสั่งฟ้อง</span><span><i class="line" style="background:var(--s2)"></i>อัตราลงโทษ</span></div>
+        <div id="ch-rates" class="chart h-sm"></div>
+      </article>
+    </div>
+
+    <div class="section-head"><h2>เปรียบเทียบรัฐและประเภทคดี</h2><p>คลิกเพื่อกรอง คลิกซ้ำเพื่อยกเลิก</p></div>
+    <div class="grid">
+      <article class="card full">
+        <h3>ปลายทางของคดี แยกตามประเภทคดี</h3>
+        <div class="legend"><span><i style="background:var(--p1)"></i>ลงโทษ</span><span><i style="background:var(--p2)"></i>สั่งฟ้องแต่ยังไม่ลงโทษ</span><span><i style="background:var(--p3)"></i>ไม่ถูกสั่งฟ้อง</span></div>
+        <div id="ch-pipeline" class="chart h-md"></div>
+      </article>
+      <article class="card full">
+        <h3>แผนที่ความร้อน: อัตราอาชญากรรมต่อแสนคน (รัฐ × ประเภทคดี)</h3>
+        <div class="legend"><span>น้อย</span><span><i style="width:120px;background:linear-gradient(90deg,var(--seq-lo),var(--seq-mid),var(--seq-hi))"></i></span><span>มาก</span><span style="color:var(--ink-3)">ภาพรวมทั้งหมด ไม่ขึ้นกับตัวกรอง · กรอบคือช่องที่เลือก</span></div>
+        <div id="ch-heat" class="chart h-lg"></div>
+      </article>
+    </div>
+
+    <div class="section-head"><h2>ผลการจัดกลุ่ม k-means (k = 4)</h2><p>ตัวแปรที่ใช้: Chargesheet_Rate, Convictions_Rate, Crime_Rate_per_100k, Justice_index (Z-transform)</p></div>
+    <div class="grid">
+      <article class="card full">
+        <div class="cluster-table-wrap">
+          <table class="clusters">
+            <thead><tr><th>กลุ่ม</th><th>จำนวนแถว*</th><th>สัดส่วน*</th><th>อัตราสั่งฟ้อง</th><th>อัตราลงโทษ</th><th>อาชญากรรม/แสน</th><th>Justice index</th></tr></thead>
+            <tbody id="cluster-tbody"></tbody>
+          </table>
+        </div>
+        <p class="sub" style="margin:8px 0 0">* จำนวนและสัดส่วนเปลี่ยนตามตัวกรอง ส่วนค่าเฉลี่ยเป็นค่าของทั้งชุดข้อมูล</p>
+      </article>
+      <article class="card">
+        <h3>โปรไฟล์ของแต่ละกลุ่ม</h3>
+        <p class="sub">ค่าเฉลี่ยของกลุ่ม เทียบค่าเฉลี่ยรวม (หน่วย: ส่วนเบี่ยงเบนมาตรฐาน)</p>
+        <div class="legend" id="lg-cluster-a"></div>
+        <div id="ch-cprofile" class="chart h-md"></div>
+      </article>
+      <article class="card">
+        <h3>สัดส่วนกลุ่มในแต่ละรัฐ</h3>
+        <p class="sub">เรียงตามสัดส่วนกลุ่ม “ยุติธรรมสูง”</p>
+        <div class="legend" id="lg-cluster-b"></div>
+        <div id="ch-cstate" class="chart h-md"></div>
+      </article>
+      <article class="card full">
+        <h3>อัตราอาชญากรรม เทียบ Justice index แยกตามกลุ่ม</h3>
+        <p class="sub">แกนนอน: อาชญากรรมต่อแสนคน · แกนตั้ง: Justice index · สุ่มตัวอย่างแบบแบ่งชั้น 3,000 แถว · จุดสีเทาคือแถวของกลุ่มอื่นเพื่อใช้อ้างอิง</p>
+        <div id="ch-scatter" class="chart" style="height:300px"></div>
+      </article>
+    </div>
+
+
+    <div class="section-head"><h2>เปรียบเทียบ D3.js กับ ECharts</h2><p>ข้อมูลชุดเดียวกัน กราฟชุดเดียวกัน ต่างกันเฉพาะเครื่องมือ</p></div>
+    <div class="cmp-grid">
+      <div class="cmp-wrap">
+        <table class="cmp">
+          <thead><tr><th>เครื่องมือ</th><th>ข้อดี</th><th>ข้อเสีย</th></tr></thead>
+          <tbody>
+            <tr class="here">
+              <td>D3.js v7 <span class="pill win">หน้านี้</span></td>
+              <td><ul class="pro">
+                <li>ควบคุมได้ทุกองค์ประกอบ ออกแบบกราฟรูปแบบใหม่ได้ไม่จำกัด</li>
+                <li>ไลบรารีเล็ก (~93 KB gzip) และวาดเร็ว</li>
+                <li>ปรับรายละเอียดได้ละเอียด เช่น แท่งมนเฉพาะปลาย ช่องว่าง 2px ระหว่างส่วนซ้อน</li>
+                <li>มีเครื่องมือเฉพาะทาง เช่น projection แผนที่ และ Delaunay หาจุดที่ใกล้เมาส์ที่สุด</li>
+              </ul></td>
+              <td><ul class="con">
+                <li>ต้องเขียนเองทุกอย่าง ทั้งแกน tooltip legend แอนิเมชัน และการย่อขยายตามจอ</li>
+                <li>โค้ดยาวกว่า ใช้เวลาพัฒนานานกว่า</li>
+                <li>เรียนรู้ยาก ต้องเข้าใจ scale, selection และ data join</li>
+                <li>แผนที่ต้องเตรียมข้อมูลเอง เช่น เรียงทิศทางจุดของ polygon ให้ถูก</li>
+              </ul></td>
+            </tr>
+            <tr>
+              <td>Apache ECharts 5</td>
+              <td><ul class="pro">
+                <li>กำหนดกราฟด้วย option object เขียนสั้นและเร็ว</li>
+                <li>มี tooltip, legend, แอนิเมชัน, visualMap และไฮไลต์เมื่อชี้มาให้ในตัว</li>
+                <li>แผนที่ใช้ได้ทันทีด้วย registerMap + series แบบ map</li>
+                <li>เรียนรู้ง่าย เอกสารและตัวอย่างเยอะ</li>
+              </ul></td>
+              <td><ul class="con">
+                <li>ไลบรารีใหญ่ (~334 KB gzip)</li>
+                <li>วาดใหม่ช้ากว่าเมื่อเปลี่ยนตัวกรอง</li>
+                <li>ปรับได้เท่าที่ option รองรับ งานนอกกรอบทำได้ยาก</li>
+                <li>บางอย่างต้องคำนวณเอง เช่น ตำแหน่ง grid ของ small multiples เป็นพิกเซล</li>
+              </ul></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="cmp-wrap">
+        <table class="cmp">
+          <thead><tr><th>ประเด็น</th><th class="here">D3.js v7 <span class="pill win">หน้านี้</span></th><th>ECharts 5</th></tr></thead>
+          <tbody>
+            <tr><td>โค้ดวาดกราฟ 9 ชิ้น</td><td class="num here">348 บรรทัด</td><td class="num">265 บรรทัด <span class="pill win">สั้นกว่า</span></td></tr>
+            <tr><td>ขนาดไลบรารี (gzip)</td><td class="num here">~93 KB <span class="pill win">เล็กกว่า</span></td><td class="num">~334 KB</td></tr>
+            <tr><td>เวลาวาดใหม่เมื่อเปลี่ยนตัวกรอง</td><td class="num here">~42 ms <span class="pill win">เร็วกว่า</span></td><td class="num">~130 ms</td></tr>
+            <tr><td>Tooltip / crosshair</td><td class="here">เขียนเอง</td><td>มีในตัว <span class="pill win">ง่ายกว่า</span></td></tr>
+            <tr><td>แอนิเมชัน</td><td class="here">ต้องเขียนเอง (หน้านี้ไม่ได้ใส่)</td><td>มีในตัว <span class="pill win">ง่ายกว่า</span></td></tr>
+            <tr><td>แผนที่</td><td class="here">projection + geoPath เขียนเอง</td><td>registerMap <span class="pill win">ง่ายกว่า</span></td></tr>
+            <tr><td>ความยืดหยุ่นของรูปทรง</td><td class="here">ไม่จำกัด <span class="pill win">ดีกว่า</span></td><td>ในขอบเขต option</td></tr>
+            <tr><td>ความยากในการเรียนรู้</td><td class="here">สูง</td><td>ต่ำ <span class="pill win">ง่ายกว่า</span></td></tr>
+            <tr><td>เหมาะกับ</td><td class="here">กราฟเฉพาะทาง งานที่ต้องออกแบบเอง</td><td>แดชบอร์ดกราฟมาตรฐานที่ต้องเสร็จเร็ว</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cmp-note">ตัวเลขวัดด้วย Chromium ความกว้าง 1280px (ค่ามัธยฐานจากการเปลี่ยนตัวกรองรัฐ 12 ครั้ง) ผลจะต่างไปตามเครื่อง เวลาจริงของหน้านี้ดูได้ที่ท้ายหน้า</p>
+    </div>
+
+    <footer class="foot">
+      <div>ข้อมูล: india_district_crime_2014_2023_30k.xlsx · cluster จาก RapidMiner (result_decision.xlsx) · เตรียมข้อมูลด้วย analysis/prepare_data.py</div>
+      <div>ขอบเขตรัฐจาก Natural Earth (public domain) ใช้เพื่อการแสดงผลเท่านั้น ไม่ใช่เส้นเขตแดนทางการ</div>
+      <div>อัตราสั่งฟ้องและอัตราลงโทษคิดจากจำนวนคดีที่รับแจ้ง · อัตราอาชญากรรมคิดเป็นคดีต่อประชากรแสนคนต่อปี</div>
+      <div>วาดกราฟรอบล่าสุดใช้เวลา <span id="render-ms">–</span></div>
+    </footer>
+  </main>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<!--LIBSCRIPT--><script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script><!--/LIBSCRIPT-->
+<!-- data as JS so the page also works when opened by double-click (file://) -->
+<script src="data/dashboard.js"></script>
+<script src="data/india_states.js"></script>
+<script src="common.js"></script>
+<script src="charts.js"></script>
+</body>
+</html>
