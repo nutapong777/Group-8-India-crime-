@@ -11,20 +11,28 @@
 สองเว็บ**แยกกันสมบูรณ์** แต่ละโฟลเดอร์มี `index.html`, `style.css`, `common.js`, `charts.js` และ `data/` ของตัวเอง ไม่อ้างไฟล์ข้ามโฟลเดอร์
 ทั้งสองใช้ดีไซน์ ตัวกรอง และข้อมูลชุดเดียวกัน ต่างกันเฉพาะ `charts.js` การเปรียบเทียบจึงวัดความต่างของเครื่องมือได้ตรง ๆ
 
+## ลิงก์
+
+- **หน้าแรก:** https://nutapong777.github.io/Group-8-India-crime-/
+- **เว็บ D3.js:** https://nutapong777.github.io/Group-8-India-crime-/web/d3/
+- **เว็บ ECharts:** https://nutapong777.github.io/Group-8-India-crime-/web/echarts/
+- **รายงาน:** [Report-Indian_Crime-CRISP_DM.pdf](Report-Indian_Crime-CRISP_DM.pdf)
+
 ## โครงสร้างไฟล์
 
 ```
 .
+├── index.html                            หน้าแรก (ลิงก์ไปเว็บ D3.js และ ECharts)
 ├── data/
 │   ├── raw/                              ข้อมูลดิบ
-│   │   ├── india_district_crime_2014_2023_30k.xlsx
-│   │   └── result_decision_rapidminer.xlsx      ผลจาก RapidMiner (id + cluster)
+│   │   ├── india_district_crime_2014_2023_30k(Base).xlsx   ข้อมูลต้นฉบับ 30,000 แถว 12 คอลัมน์
+│   │   └── result_decision_rapidminer.xlsx                 ผลจาก RapidMiner (id + cluster)
 │   └── cleaned/                          ข้อมูลที่ทำความสะอาดแล้ว
-│       ├── india_crime_clustered.csv            30,000 แถว + cluster + ชื่อกลุ่ม
-│       └── cleaning_report.json                 ผลตรวจคุณภาพข้อมูล และโปรไฟล์ cluster
+│       ├── india_district_crime_2014_2023_30k(Fix).xlsx    ตัด Chargesheet_Rate, Convictions_Rate ออก (feature selection ลด leakage)
+│       ├── india_crime_clustered.csv                       สร้างโดย prepare_data.py: 30,000 แถว + cluster + ชื่อกลุ่ม
+│       └── cleaning_report.json                            สร้างโดย prepare_data.py: ผลตรวจคุณภาพข้อมูล
 ├── analysis/                             สคริปต์/ไฟล์วิเคราะห์ข้อมูล
-│   ├── prepare_data.py                          ทำความสะอาด + แนบ cluster + สร้าง JSON ให้ทั้งสองเว็บ
-│   ├── build_standalone.py                      รวมแต่ละเว็บเป็น HTML ไฟล์เดียวใน dist/
+│   ├── prepare_data.py                   ทำความสะอาด + แนบ cluster + สร้างข้อมูลให้ทั้งสองเว็บ
 │   └── rapidminer/
 │       ├── decision_tree.rmp
 │       └── random_forest.rmp
@@ -34,18 +42,18 @@
 │   │   ├── style.css
 │   │   ├── common.js                     ตัวกรอง KPI ตาราง การรวมข้อมูล
 │   │   ├── charts.js                     โค้ดวาดกราฟด้วย D3.js
-│   │   └── data/ dashboard.json, india_states.geojson
+│   │   └── data/                         dashboard.json/.js, india_states.geojson/.js
 │   └── echarts/                          เว็บเวอร์ชัน ECharts (ใช้งานได้ด้วยตัวเอง)
 │       ├── index.html
 │       ├── style.css
 │       ├── common.js
 │       ├── charts.js                     โค้ดวาดกราฟด้วย ECharts
-│       └── data/ dashboard.json, india_states.geojson
-├── dist/                                 ไฟล์ HTML ไฟล์เดียว ดับเบิลคลิกเปิดได้
+│       └── data/                         dashboard.json/.js, india_states.geojson/.js
+├── dist/                                 เว็บละไฟล์เดียว ดับเบิลคลิกเปิดได้
 │   ├── india-crime-d3.html
 │   └── india-crime-echarts.html
 ├── server/serve.py                       เว็บเซิร์ฟเวอร์ Python + API
-├── requirements.txt
+├── Report-Indian_Crime-CRISP_DM.docx / .pdf   รายงาน
 └── README.md
 ```
 
@@ -62,16 +70,13 @@ python server/serve.py --site echarts --port 8001  # http://localhost:8001
 
 แต่ละเว็บมี API ของตัวเอง เช่น `/api/summary?state=Kerala&crime=Murder` และ `/api/clusters`
 
-> ถ้าเปิด `web/d3/index.html` หรือ `web/echarts/index.html` ด้วยการดับเบิลคลิก เบราว์เซอร์จะบล็อกการโหลด JSON
-> ให้ใช้เซิร์ฟเวอร์ข้างบน, Live Server ของ VS Code หรือ `python -m http.server -d web/d3` แทน
-> ถ้า deploy บน GitHub Pages จะได้สองลิงก์แยกกัน คือ `.../web/d3/` และ `.../web/echarts/`
+> ดับเบิลคลิก `web/d3/index.html` หรือ `web/echarts/index.html` ได้เช่นกัน ถ้าโฟลเดอร์ `data/` อยู่ข้างไฟล์
 
-**สร้างข้อมูลและไฟล์ dist ใหม่**
+**สร้างข้อมูลให้เว็บใหม่**
 
 ```bash
-pip install -r requirements.txt
-python analysis/prepare_data.py       # data/raw -> data/cleaned + web/*/data/dashboard.json
-python analysis/build_standalone.py   # web/d3, web/echarts -> dist/*.html
+pip install pandas openpyxl numpy
+python analysis/prepare_data.py       # data/raw -> data/cleaned + web/*/data/
 ```
 
 ## CRISP-DM โดยย่อ
