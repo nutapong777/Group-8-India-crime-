@@ -177,6 +177,17 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
   .filter-note { margin-left: 0; width: 100%; }
   .kpi .k-value { font-size: 22px; }
 }
+
+/* entrance: cards rise in once on page load (content is visible at rest; motion only on load) */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+#app:not([hidden]) .kpi, #app:not([hidden]) .card { animation: rise .55s cubic-bezier(.2,.7,.2,1) both; }
+#app .kpi:nth-child(2) { animation-delay: .05s; } #app .kpi:nth-child(3) { animation-delay: .1s; } #app .kpi:nth-child(4) { animation-delay: .15s; }
+#app .grid .card:nth-child(2) { animation-delay: .08s; } #app .grid .card:nth-child(3) { animation-delay: .14s; } #app .grid .card:nth-child(4) { animation-delay: .2s; }
+.kpi, .card { transition: box-shadow .2s ease, transform .2s ease; }
+.kpi:hover, .card:hover { box-shadow: 0 2px 4px rgba(20,26,46,.05), 0 12px 32px rgba(20,26,46,.08); }
+.tip { transition: opacity .12s ease; }
+select, button { transition: border-color .15s ease, background-color .15s ease; }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
 </style>
@@ -316,7 +327,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
               </ul></td>
               <td><ul class="con">
                 <li>ต้องเขียนเองทุกอย่าง ทั้งแกน tooltip legend แอนิเมชัน และการย่อขยายตามจอ</li>
-                <li>โค้ดยาวกว่า ใช้เวลาพัฒนานานกว่า</li>
+                <li>โค้ดยาวกว่ามาก (427 บรรทัด เทียบกับ 268) ใช้เวลาพัฒนานานกว่า</li>
                 <li>เรียนรู้ยาก ต้องเข้าใจ scale, selection และ data join</li>
                 <li>แผนที่ต้องเตรียมข้อมูลเอง เช่น เรียงทิศทางจุดของ polygon ให้ถูก</li>
               </ul></td>
@@ -325,7 +336,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
               <td>Apache ECharts 5 <span class="pill win">หน้านี้</span></td>
               <td><ul class="pro">
                 <li>กำหนดกราฟด้วย option object เขียนสั้นและเร็ว</li>
-                <li>มี tooltip, legend, แอนิเมชัน, visualMap และไฮไลต์เมื่อชี้มาให้ในตัว</li>
+                <li>มี tooltip, legend, visualMap และไฮไลต์เมื่อชี้มาให้ในตัว แอนิเมชันเปลี่ยนสถานะได้ด้วยการตั้งค่าเพียงไม่กี่บรรทัด</li>
                 <li>แผนที่ใช้ได้ทันทีด้วย registerMap + series แบบ map</li>
                 <li>เรียนรู้ง่าย เอกสารและตัวอย่างเยอะ</li>
               </ul></td>
@@ -343,11 +354,11 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
         <table class="cmp">
           <thead><tr><th>ประเด็น</th><th>D3.js v7</th><th class="here">ECharts 5 <span class="pill win">หน้านี้</span></th></tr></thead>
           <tbody>
-            <tr><td>โค้ดวาดกราฟ 9 ชิ้น</td><td class="num">348 บรรทัด</td><td class="num here">265 บรรทัด <span class="pill win">สั้นกว่า</span></td></tr>
+            <tr><td>โค้ดวาดกราฟ 9 ชิ้น</td><td class="num">427 บรรทัด</td><td class="num here">268 บรรทัด <span class="pill win">สั้นกว่า</span></td></tr>
             <tr><td>ขนาดไลบรารี (gzip)</td><td class="num">~93 KB <span class="pill win">เล็กกว่า</span></td><td class="num here">~334 KB</td></tr>
-            <tr><td>เวลาวาดใหม่เมื่อเปลี่ยนตัวกรอง</td><td class="num">~42 ms <span class="pill win">เร็วกว่า</span></td><td class="num here">~130 ms</td></tr>
+            <tr><td>เวลาวาดใหม่เมื่อเปลี่ยนตัวกรอง</td><td class="num">~39 ms <span class="pill win">เร็วกว่า</span></td><td class="num here">~113 ms</td></tr>
             <tr><td>Tooltip / crosshair</td><td>เขียนเอง</td><td class="here">มีในตัว <span class="pill win">ง่ายกว่า</span></td></tr>
-            <tr><td>แอนิเมชัน</td><td>ต้องเขียนเอง (หน้านี้ไม่ได้ใส่)</td><td class="here">มีในตัว <span class="pill win">ง่ายกว่า</span></td></tr>
+            <tr><td>แอนิเมชัน</td><td>เขียนเองด้วย d3.transition (เลื่อนตำแหน่ง ยืดแท่ง นับตัวเลข)</td><td class="here">มีในตัว <span class="pill win">ง่ายกว่า</span></td></tr>
             <tr><td>แผนที่</td><td>projection + geoPath เขียนเอง</td><td class="here">registerMap <span class="pill win">ง่ายกว่า</span></td></tr>
             <tr><td>ความยืดหยุ่นของรูปทรง</td><td>ไม่จำกัด <span class="pill win">ดีกว่า</span></td><td class="here">ในขอบเขต option</td></tr>
             <tr><td>ความยากในการเรียนรู้</td><td>สูง</td><td class="here">ต่ำ <span class="pill win">ง่ายกว่า</span></td></tr>
@@ -355,7 +366,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
           </tbody>
         </table>
       </div>
-      <p class="cmp-note">ตัวเลขวัดด้วย Chromium ความกว้าง 1280px (ค่ามัธยฐานจากการเปลี่ยนตัวกรองรัฐ 12 ครั้ง) ผลจะต่างไปตามเครื่อง เวลาจริงของหน้านี้ดูได้ที่ท้ายหน้า</p>
+      <p class="cmp-note">ตัวเลขวัดด้วย Chromium ความกว้าง 1280px (ค่ามัธยฐานจากการเปลี่ยนตัวกรองรัฐ 12 ครั้ง เป็นเวลาสร้างกราฟ ไม่รวมเวลาแอนิเมชัน) ผลจะต่างไปตามเครื่อง เวลาจริงของหน้านี้ดูได้ที่ท้ายหน้า</p>
     </div>
 
     <footer class="foot">
@@ -546,13 +557,28 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
   };
 
   /* ---------- DOM parts that do not depend on a chart library ---------- */
+  // numbers count from their previous value to the new one
+  const kpiPrev = {};
+  function countTo(id, to, f) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const from = kpiPrev[id] ?? 0;
+    kpiPrev[id] = to;
+    if (!App.animate || from === to) { el.textContent = f(to); return; }
+    const t0 = performance.now(), D = 650;
+    (function step(now) {
+      const t = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - t, 3);
+      el.textContent = f(from + (to - from) * e);
+      if (t < 1) requestAnimationFrame(step);
+    })(t0);
+  }
   function renderKpis(vm) {
     const k = vm.kpi;
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    set("kpi-cases", fmt.int(k.cases));
-    set("kpi-chg", fmt.pct(k.chgRate));
-    set("kpi-conv", fmt.pct(k.convRate));
-    set("kpi-rate", fmt.num(k.crimeRate, 1));
+    countTo("kpi-cases", k.cases, fmt.int);
+    countTo("kpi-chg", k.chgRate, v => fmt.pct(v));
+    countTo("kpi-conv", k.convRate, v => fmt.pct(v));
+    countTo("kpi-rate", k.crimeRate, v => fmt.num(v, 1));
     set("kpi-rate-sub", App.sel.crime === null ? "ทุกประเภทคดี ต่อแสนคนต่อปี" : fmt.crime(App.data.crimes[App.sel.crime]) + " ต่อแสนคนต่อปี");
     const scope = [App.sel.state === null ? "ทุกรัฐ" : fmt.state(App.data.states[App.sel.state]),
                    App.sel.crime === null ? "ทุกประเภทคดี" : fmt.crime(App.data.crimes[App.sel.crime])].join(" · ");
@@ -614,9 +640,12 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
   }
 
   let raf = 0;
-  function update() {
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  // animate = false for redraws that are not data changes (window resize)
+  function update(animate = true) {
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
+      App.animate = animate && !reduceMotion.matches;
       const vm = App.viewModel();
       renderKpis(vm);
       renderClusterTable(vm);
@@ -654,10 +683,8 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
 
     // redraw on resize and on theme change (light/dark)
     let rt = 0;
-    const ro = new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(update, 120); });
+    const ro = new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => update(false), 120); });
     ro.observe(document.getElementById("app"));
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update);
-    new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   }
 
   window.App = App;
@@ -692,7 +719,11 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
   // shared look so ECharts matches the design tokens
   function base() {
     return {
-      animationDuration: 300,
+      // entrance on first draw, then morph between states on every filter change
+      animation: window.App.animate !== false,
+      animationDuration: 700, animationEasing: "cubicOut",
+      animationDurationUpdate: 650, animationEasingUpdate: "cubicOut",
+      animationDelay: i => i * 25,
       textStyle: { fontFamily: T.fontBody, color: T.ink2 },
       tooltip: {
         backgroundColor: T.surface, borderColor: T.line, borderWidth: 1, padding: [8, 10],
@@ -721,7 +752,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
         areaStyle: { color: T.s1, opacity: .12 },
         endLabel: { show: true, formatter: p => fmt.compact(p.value), color: T.ink, fontFamily: T.fontMono, fontWeight: 600, fontSize: 12 }
       }]
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 2. chargesheet & conviction rate per year */
@@ -741,7 +772,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
       yAxis: { type: "value", scale: true, splitNumber: 5, axisLabel: axisLabel({ formatter: v => Math.round(v * 100) + "%" }), splitLine,
         min: v => Math.max(0, Math.floor((v.min - .05) * 20) / 20), max: v => Math.min(1, Math.ceil((v.max + .03) * 20) / 20) },
       series: [s("chgRate", "สั่งฟ้อง", T.s1), s("convRate", "ลงโทษ", T.s2)]
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 3. crime rate by state */
@@ -764,7 +795,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
         })),
         label: { show: true, position: "right", formatter: p => vm.metric.fmt(p.value), color: T.ink2, fontFamily: T.fontMono, fontSize: 11 }
       }]
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   function stateTip(d) {
@@ -801,7 +832,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
           };
         })
       }]
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 4. case outcome by crime type (100% stacked) */
@@ -826,7 +857,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
         })),
         label: j === 0 ? { show: true, position: "insideLeft", formatter: p => fmt.pct(p.value), color: T.surface, fontFamily: T.fontMono, fontWeight: 600, fontSize: 11 } : { show: false }
       }))
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 5. heatmap */
@@ -864,7 +895,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
         label: { show: true, formatter: p => fmt.num(p.value[2], 2), fontFamily: T.fontMono, fontSize: 11, fontWeight: 500 },
         emphasis: { itemStyle: { borderColor: T.ink, borderWidth: 2 } }
       }]
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 6. cluster profile (grouped bars on z-scores) */
@@ -886,7 +917,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
           itemStyle: { color: T.cluster[i], borderRadius: c.z[v[0]] >= 0 ? [4, 4, 0, 0] : [0, 0, 4, 4] }
         }))
       }))
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 7. cluster share per state (100% stacked) */
@@ -908,7 +939,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
             borderColor: T.surface, borderWidth: 1, borderRadius: j === 3 ? [0, 4, 4, 0] : 0 }
         }))
       }))
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 8. scatter small multiples: 4 grids in one instance */
@@ -946,7 +977,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
       title: titles, grid: grids, xAxis: xs, yAxis: ys, series,
       tooltip: { ...base().tooltip, trigger: "item",
         formatter: prm => { const p = prm.data.p; if (!p) return ""; return `<b>${p.district}</b> · ${fmt.state(App.data.states[p.s])}<br>${fmt.crime(App.data.crimes[p.c])} · ${p.year}${row("อาชญากรรม/แสน", fmt.num(p.x, 2), prm.color)}${row("Justice index", fmt.num(p.y, 2))}${row("อัตราลงโทษ", p.conv + "%")}`; } }
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   window.Charts = {

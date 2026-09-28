@@ -167,4 +167,15 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
   .filter-note { margin-left: 0; width: 100%; }
   .kpi .k-value { font-size: 22px; }
 }
+
+/* entrance: cards rise in once on page load (content is visible at rest; motion only on load) */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+#app:not([hidden]) .kpi, #app:not([hidden]) .card { animation: rise .55s cubic-bezier(.2,.7,.2,1) both; }
+#app .kpi:nth-child(2) { animation-delay: .05s; } #app .kpi:nth-child(3) { animation-delay: .1s; } #app .kpi:nth-child(4) { animation-delay: .15s; }
+#app .grid .card:nth-child(2) { animation-delay: .08s; } #app .grid .card:nth-child(3) { animation-delay: .14s; } #app .grid .card:nth-child(4) { animation-delay: .2s; }
+.kpi, .card { transition: box-shadow .2s ease, transform .2s ease; }
+.kpi:hover, .card:hover { box-shadow: 0 2px 4px rgba(20,26,46,.05), 0 12px 32px rgba(20,26,46,.08); }
+.tip { transition: opacity .12s ease; }
+select, button { transition: border-color .15s ease, background-color .15s ease; }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

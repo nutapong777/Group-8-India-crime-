@@ -24,7 +24,11 @@
   // shared look so ECharts matches the design tokens
   function base() {
     return {
-      animationDuration: 300,
+      // entrance on first draw, then morph between states on every filter change
+      animation: window.App.animate !== false,
+      animationDuration: 700, animationEasing: "cubicOut",
+      animationDurationUpdate: 650, animationEasingUpdate: "cubicOut",
+      animationDelay: i => i * 25,
       textStyle: { fontFamily: T.fontBody, color: T.ink2 },
       tooltip: {
         backgroundColor: T.surface, borderColor: T.line, borderWidth: 1, padding: [8, 10],
@@ -53,7 +57,7 @@
         areaStyle: { color: T.s1, opacity: .12 },
         endLabel: { show: true, formatter: p => fmt.compact(p.value), color: T.ink, fontFamily: T.fontMono, fontWeight: 600, fontSize: 12 }
       }]
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 2. chargesheet & conviction rate per year */
@@ -73,7 +77,7 @@
       yAxis: { type: "value", scale: true, splitNumber: 5, axisLabel: axisLabel({ formatter: v => Math.round(v * 100) + "%" }), splitLine,
         min: v => Math.max(0, Math.floor((v.min - .05) * 20) / 20), max: v => Math.min(1, Math.ceil((v.max + .03) * 20) / 20) },
       series: [s("chgRate", "สั่งฟ้อง", T.s1), s("convRate", "ลงโทษ", T.s2)]
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 3. crime rate by state */
@@ -96,7 +100,7 @@
         })),
         label: { show: true, position: "right", formatter: p => vm.metric.fmt(p.value), color: T.ink2, fontFamily: T.fontMono, fontSize: 11 }
       }]
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   function stateTip(d) {
@@ -133,7 +137,7 @@
           };
         })
       }]
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 4. case outcome by crime type (100% stacked) */
@@ -158,7 +162,7 @@
         })),
         label: j === 0 ? { show: true, position: "insideLeft", formatter: p => fmt.pct(p.value), color: T.surface, fontFamily: T.fontMono, fontWeight: 600, fontSize: 11 } : { show: false }
       }))
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 5. heatmap */
@@ -196,7 +200,7 @@
         label: { show: true, formatter: p => fmt.num(p.value[2], 2), fontFamily: T.fontMono, fontSize: 11, fontWeight: 500 },
         emphasis: { itemStyle: { borderColor: T.ink, borderWidth: 2 } }
       }]
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 6. cluster profile (grouped bars on z-scores) */
@@ -218,7 +222,7 @@
           itemStyle: { color: T.cluster[i], borderRadius: c.z[v[0]] >= 0 ? [4, 4, 0, 0] : [0, 0, 4, 4] }
         }))
       }))
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 7. cluster share per state (100% stacked) */
@@ -240,7 +244,7 @@
             borderColor: T.surface, borderWidth: 1, borderRadius: j === 3 ? [0, 4, 4, 0] : 0 }
         }))
       }))
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   /* 8. scatter small multiples: 4 grids in one instance */
@@ -278,7 +282,7 @@
       title: titles, grid: grids, xAxis: xs, yAxis: ys, series,
       tooltip: { ...base().tooltip, trigger: "item",
         formatter: prm => { const p = prm.data.p; if (!p) return ""; return `<b>${p.district}</b> · ${fmt.state(App.data.states[p.s])}<br>${fmt.crime(App.data.crimes[p.c])} · ${p.year}${row("อาชญากรรม/แสน", fmt.num(p.x, 2), prm.color)}${row("Justice index", fmt.num(p.y, 2))}${row("อัตราลงโทษ", p.conv + "%")}`; } }
-    }, true);
+    }, { notMerge: false, lazyUpdate: false });
   }
 
   window.Charts = {

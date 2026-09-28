@@ -177,6 +177,17 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
   .filter-note { margin-left: 0; width: 100%; }
   .kpi .k-value { font-size: 22px; }
 }
+
+/* entrance: cards rise in once on page load (content is visible at rest; motion only on load) */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+#app:not([hidden]) .kpi, #app:not([hidden]) .card { animation: rise .55s cubic-bezier(.2,.7,.2,1) both; }
+#app .kpi:nth-child(2) { animation-delay: .05s; } #app .kpi:nth-child(3) { animation-delay: .1s; } #app .kpi:nth-child(4) { animation-delay: .15s; }
+#app .grid .card:nth-child(2) { animation-delay: .08s; } #app .grid .card:nth-child(3) { animation-delay: .14s; } #app .grid .card:nth-child(4) { animation-delay: .2s; }
+.kpi, .card { transition: box-shadow .2s ease, transform .2s ease; }
+.kpi:hover, .card:hover { box-shadow: 0 2px 4px rgba(20,26,46,.05), 0 12px 32px rgba(20,26,46,.08); }
+.tip { transition: opacity .12s ease; }
+select, button { transition: border-color .15s ease, background-color .15s ease; }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
 </style>
@@ -316,7 +327,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
               </ul></td>
               <td><ul class="con">
                 <li>ต้องเขียนเองทุกอย่าง ทั้งแกน tooltip legend แอนิเมชัน และการย่อขยายตามจอ</li>
-                <li>โค้ดยาวกว่า ใช้เวลาพัฒนานานกว่า</li>
+                <li>โค้ดยาวกว่ามาก (427 บรรทัด เทียบกับ 268) ใช้เวลาพัฒนานานกว่า</li>
                 <li>เรียนรู้ยาก ต้องเข้าใจ scale, selection และ data join</li>
                 <li>แผนที่ต้องเตรียมข้อมูลเอง เช่น เรียงทิศทางจุดของ polygon ให้ถูก</li>
               </ul></td>
@@ -325,7 +336,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
               <td>Apache ECharts 5</td>
               <td><ul class="pro">
                 <li>กำหนดกราฟด้วย option object เขียนสั้นและเร็ว</li>
-                <li>มี tooltip, legend, แอนิเมชัน, visualMap และไฮไลต์เมื่อชี้มาให้ในตัว</li>
+                <li>มี tooltip, legend, visualMap และไฮไลต์เมื่อชี้มาให้ในตัว แอนิเมชันเปลี่ยนสถานะได้ด้วยการตั้งค่าเพียงไม่กี่บรรทัด</li>
                 <li>แผนที่ใช้ได้ทันทีด้วย registerMap + series แบบ map</li>
                 <li>เรียนรู้ง่าย เอกสารและตัวอย่างเยอะ</li>
               </ul></td>
@@ -343,11 +354,11 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
         <table class="cmp">
           <thead><tr><th>ประเด็น</th><th class="here">D3.js v7 <span class="pill win">หน้านี้</span></th><th>ECharts 5</th></tr></thead>
           <tbody>
-            <tr><td>โค้ดวาดกราฟ 9 ชิ้น</td><td class="num here">348 บรรทัด</td><td class="num">265 บรรทัด <span class="pill win">สั้นกว่า</span></td></tr>
+            <tr><td>โค้ดวาดกราฟ 9 ชิ้น</td><td class="num here">427 บรรทัด</td><td class="num">268 บรรทัด <span class="pill win">สั้นกว่า</span></td></tr>
             <tr><td>ขนาดไลบรารี (gzip)</td><td class="num here">~93 KB <span class="pill win">เล็กกว่า</span></td><td class="num">~334 KB</td></tr>
-            <tr><td>เวลาวาดใหม่เมื่อเปลี่ยนตัวกรอง</td><td class="num here">~42 ms <span class="pill win">เร็วกว่า</span></td><td class="num">~130 ms</td></tr>
+            <tr><td>เวลาวาดใหม่เมื่อเปลี่ยนตัวกรอง</td><td class="num here">~39 ms <span class="pill win">เร็วกว่า</span></td><td class="num">~113 ms</td></tr>
             <tr><td>Tooltip / crosshair</td><td class="here">เขียนเอง</td><td>มีในตัว <span class="pill win">ง่ายกว่า</span></td></tr>
-            <tr><td>แอนิเมชัน</td><td class="here">ต้องเขียนเอง (หน้านี้ไม่ได้ใส่)</td><td>มีในตัว <span class="pill win">ง่ายกว่า</span></td></tr>
+            <tr><td>แอนิเมชัน</td><td class="here">เขียนเองด้วย d3.transition (เลื่อนตำแหน่ง ยืดแท่ง นับตัวเลข)</td><td>มีในตัว <span class="pill win">ง่ายกว่า</span></td></tr>
             <tr><td>แผนที่</td><td class="here">projection + geoPath เขียนเอง</td><td>registerMap <span class="pill win">ง่ายกว่า</span></td></tr>
             <tr><td>ความยืดหยุ่นของรูปทรง</td><td class="here">ไม่จำกัด <span class="pill win">ดีกว่า</span></td><td>ในขอบเขต option</td></tr>
             <tr><td>ความยากในการเรียนรู้</td><td class="here">สูง</td><td>ต่ำ <span class="pill win">ง่ายกว่า</span></td></tr>
@@ -355,7 +366,7 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
           </tbody>
         </table>
       </div>
-      <p class="cmp-note">ตัวเลขวัดด้วย Chromium ความกว้าง 1280px (ค่ามัธยฐานจากการเปลี่ยนตัวกรองรัฐ 12 ครั้ง) ผลจะต่างไปตามเครื่อง เวลาจริงของหน้านี้ดูได้ที่ท้ายหน้า</p>
+      <p class="cmp-note">ตัวเลขวัดด้วย Chromium ความกว้าง 1280px (ค่ามัธยฐานจากการเปลี่ยนตัวกรองรัฐ 12 ครั้ง เป็นเวลาสร้างกราฟ ไม่รวมเวลาแอนิเมชัน) ผลจะต่างไปตามเครื่อง เวลาจริงของหน้านี้ดูได้ที่ท้ายหน้า</p>
     </div>
 
     <footer class="foot">
@@ -546,13 +557,28 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
   };
 
   /* ---------- DOM parts that do not depend on a chart library ---------- */
+  // numbers count from their previous value to the new one
+  const kpiPrev = {};
+  function countTo(id, to, f) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const from = kpiPrev[id] ?? 0;
+    kpiPrev[id] = to;
+    if (!App.animate || from === to) { el.textContent = f(to); return; }
+    const t0 = performance.now(), D = 650;
+    (function step(now) {
+      const t = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - t, 3);
+      el.textContent = f(from + (to - from) * e);
+      if (t < 1) requestAnimationFrame(step);
+    })(t0);
+  }
   function renderKpis(vm) {
     const k = vm.kpi;
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    set("kpi-cases", fmt.int(k.cases));
-    set("kpi-chg", fmt.pct(k.chgRate));
-    set("kpi-conv", fmt.pct(k.convRate));
-    set("kpi-rate", fmt.num(k.crimeRate, 1));
+    countTo("kpi-cases", k.cases, fmt.int);
+    countTo("kpi-chg", k.chgRate, v => fmt.pct(v));
+    countTo("kpi-conv", k.convRate, v => fmt.pct(v));
+    countTo("kpi-rate", k.crimeRate, v => fmt.num(v, 1));
     set("kpi-rate-sub", App.sel.crime === null ? "ทุกประเภทคดี ต่อแสนคนต่อปี" : fmt.crime(App.data.crimes[App.sel.crime]) + " ต่อแสนคนต่อปี");
     const scope = [App.sel.state === null ? "ทุกรัฐ" : fmt.state(App.data.states[App.sel.state]),
                    App.sel.crime === null ? "ทุกประเภทคดี" : fmt.crime(App.data.crimes[App.sel.crime])].join(" · ");
@@ -614,9 +640,12 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
   }
 
   let raf = 0;
-  function update() {
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  // animate = false for redraws that are not data changes (window resize)
+  function update(animate = true) {
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
+      App.animate = animate && !reduceMotion.matches;
       const vm = App.viewModel();
       renderKpis(vm);
       renderClusterTable(vm);
@@ -654,10 +683,8 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
 
     // redraw on resize and on theme change (light/dark)
     let rt = 0;
-    const ro = new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(update, 120); });
+    const ro = new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => update(false), 120); });
     ro.observe(document.getElementById("app"));
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update);
-    new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   }
 
   window.App = App;
@@ -675,6 +702,26 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
   const { fmt } = window.App;
   const tipEl = document.getElementById("tip");
   let T; // theme tokens for the current render
+
+  /* ---------------- transitions ----------------
+   * Every render redraws the SVG, so each chart remembers where its marks were
+   * (MEM) and animates from there to the new values. No memory yet = grow in from zero.
+   * App.animate is false on window resize and for prefers-reduced-motion.
+   */
+  const DUR = 650;
+  const MEM = {};                       // chartId -> Map(key -> previous geometry/value)
+  const anim = () => window.App.animate;
+  const ease = d3.easeCubicOut;
+  function tr(sel, delay = 0, name) {   // a transition, or an instant one when animation is off
+    return sel.transition(name).duration(anim() ? DUR : 0).delay(anim() ? delay : 0).ease(ease);
+  }
+  function mem(id) { return MEM[id] || (MEM[id] = new Map()); }
+  // number text that counts from its previous value
+  function countText(sel, from, to, f) {
+    sel.text(f(to));
+    if (!anim()) return;
+    tr(sel).textTween(() => { const i = d3.interpolateNumber(from, to); return t => f(i(t)); });
+  }
 
   /* ---------------- helpers ---------------- */
   function frame(id, minW = 0) {
@@ -735,15 +782,32 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
       .call(g => styleAxis(g));
     const area = d3.area().x(d => x(d.year)).y0(y(0)).y1(d => y(d.cases)).curve(d3.curveMonotoneX);
     const line = d3.line().x(d => x(d.year)).y(d => y(d.cases)).curve(d3.curveMonotoneX);
-    svg.append("path").datum(data).attr("d", area).attr("fill", T.s1).attr("opacity", .12);
-    svg.append("path").datum(data).attr("d", line).attr("fill", "none").attr("stroke", T.s1).attr("stroke-width", 2);
+    const M = mem("trend"), p = M.get("p");
     const last = data[data.length - 1];
-    svg.append("circle").attr("cx", x(last.year)).attr("cy", y(last.cases)).attr("r", 4.5)
+    const aPath = svg.append("path").attr("fill", T.s1).attr("opacity", .12).attr("d", p ? p.area : area(data.map(d => ({ ...d, cases: 0 }))));
+    tr(aPath).attr("d", area(data));
+    const lPath = svg.append("path").attr("fill", "none").attr("stroke", T.s1).attr("stroke-width", 2).attr("d", p ? p.line : line(data));
+    if (p) tr(lPath).attr("d", line(data));
+    else drawIn(lPath);
+    const dot = svg.append("circle").attr("cx", x(last.year)).attr("cy", p ? p.cy : y(last.cases)).attr("r", 4.5)
       .attr("fill", T.s1).attr("stroke", T.surface).attr("stroke-width", 2);
-    svg.append("text").attr("x", x(last.year) + 8).attr("y", y(last.cases) + 4)
-      .attr("fill", T.ink).style("font", `600 12px ${T.fontMono}`).text(fmt.compact(last.cases));
+    tr(dot).attr("cy", y(last.cases));
+    const lab = svg.append("text").attr("x", x(last.year) + 8).attr("y", (p ? p.cy : y(last.cases)) + 4)
+      .attr("fill", T.ink).style("font", `600 12px ${T.fontMono}`);
+    tr(lab).attr("y", y(last.cases) + 4);
+    countText(lab, p ? p.v : 0, last.cases, fmt.compact);
+    M.set("p", { area: area(data), line: line(data), cy: y(last.cases), v: last.cases });
     crosshair(svg, x, data, m, h, (d) => [[x(d.year), y(d.cases), T.s1]],
       d => `<b>ปี ${d.year}</b>${row("คดีที่รับแจ้ง", fmt.int(d.cases), T.s1)}`);
+  }
+
+  // stroke-dash draw-in for a line the first time it appears
+  function drawIn(path) {
+    if (!anim()) return;
+    const L = path.node().getTotalLength();
+    path.attr("stroke-dasharray", `${L} ${L}`).attr("stroke-dashoffset", L)
+      .transition().duration(DUR * 1.4).ease(d3.easeCubicInOut).attr("stroke-dashoffset", 0)
+      .on("end", function () { d3.select(this).attr("stroke-dasharray", null); });
   }
 
   // shared crosshair for line charts
@@ -785,14 +849,17 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
       { key: "chgRate", label: "สั่งฟ้อง", color: T.s1 },
       { key: "convRate", label: "ลงโทษ", color: T.s2 }
     ];
+    const M = mem("rates");
     for (const s of series) {
-      svg.append("path").datum(data)
-        .attr("d", d3.line().x(d => x(d.year)).y(d => y(d[s.key])).curve(d3.curveMonotoneX))
-        .attr("fill", "none").attr("stroke", s.color).attr("stroke-width", 2);
-      const last = data[data.length - 1];
-      svg.append("text").attr("x", x(last.year) + 8).attr("y", y(last[s.key]) + 4)
-        .attr("fill", T.ink2).style("font", `500 11.5px ${T.fontBody}`)
-        .text(`${s.label} ${fmt.pct(last[s.key])}`);
+      const ln = d3.line().x(d => x(d.year)).y(d => y(d[s.key])).curve(d3.curveMonotoneX);
+      const p = M.get(s.key), last = data[data.length - 1];
+      const path = svg.append("path").attr("fill", "none").attr("stroke", s.color).attr("stroke-width", 2).attr("d", p ? p.d : ln(data));
+      if (p) tr(path).attr("d", ln(data)); else drawIn(path);
+      const t = svg.append("text").attr("x", x(last.year) + 8).attr("y", (p ? p.y : y(last[s.key])) + 4)
+        .attr("fill", T.ink2).style("font", `500 11.5px ${T.fontBody}`);
+      tr(t).attr("y", y(last[s.key]) + 4);
+      countText(t, p ? p.v : last[s.key], last[s.key], v => `${s.label} ${fmt.pct(v)}`);
+      M.set(s.key, { d: ln(data), y: y(last[s.key]), v: last[s.key] });
     }
     crosshair(svg, x, data, m, h, d => series.map(s => [x(d.year), y(d[s.key]), s.color]),
       d => `<b>ปี ${d.year}</b>${row("อัตราสั่งฟ้อง", fmt.pct(d.chgRate), T.s1)}${row("อัตราลงโทษ", fmt.pct(d.convRate), T.s2)}`);
@@ -810,14 +877,29 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
       .on("click", (ev, d) => App.setState(d.i))
       .on("pointermove", (ev, d) => tip(stateTip(d), ev))
       .on("pointerleave", hideTip);
-    g.append("rect").attr("x", 0).attr("width", w).attr("y", d => y(d.key) - 3).attr("height", y.bandwidth() + 6).attr("fill", "transparent");
-    g.append("path").attr("d", d => hBarPath(m.l, y(d.key), x(d.value) - m.l, y.bandwidth()))
-      .attr("fill", d => selected === null || selected === d.i ? T.accent : T.muted);
-    g.append("text").attr("x", m.l - 8).attr("y", d => y(d.key) + y.bandwidth() / 2).attr("dy", ".35em")
+    const M = mem("state"), bh = y.bandwidth();
+    // each row starts where it was last time (rank + length) and moves to its new place
+    g.attr("transform", d => `translate(0,${M.has(d.key) ? M.get(d.key).y - y(d.key) : 0})`);
+    tr(g).attr("transform", "translate(0,0)");
+    g.append("rect").attr("x", 0).attr("width", w).attr("y", d => y(d.key) - 3).attr("height", bh + 6).attr("fill", "transparent");
+    g.append("path").attr("fill", d => selected === null || selected === d.i ? T.accent : T.muted)
+      .attr("d", d => hBarPath(m.l, y(d.key), M.has(d.key) ? M.get(d.key).w : 0, bh))
+      .each(function (d, i) {
+        const from = M.has(d.key) ? M.get(d.key).w : 0, to = x(d.value) - m.l;
+        tr(d3.select(this), M.has(d.key) ? 0 : i * 35).attrTween("d", () => t => hBarPath(m.l, y(d.key), from + (to - from) * t, bh));
+      });
+    g.append("text").attr("x", m.l - 8).attr("y", d => y(d.key) + bh / 2).attr("dy", ".35em")
       .attr("text-anchor", "end").attr("fill", d => selected === d.i ? T.ink : T.ink2)
       .style("font", d => `${selected === d.i ? 600 : 400} 12px ${T.fontBody}`).text(d => d.label);
-    g.append("text").attr("x", d => x(d.value) + 6).attr("y", d => y(d.key) + y.bandwidth() / 2).attr("dy", ".35em")
-      .attr("fill", T.ink2).style("font", `500 11px ${T.fontMono}`).text(d => vm.metric.fmt(d.value));
+    g.append("text").attr("y", d => y(d.key) + bh / 2).attr("dy", ".35em")
+      .attr("fill", T.ink2).style("font", `500 11px ${T.fontMono}`)
+      .attr("x", d => m.l + (M.has(d.key) ? M.get(d.key).w : 0) + 6)
+      .each(function (d, i) {
+        const el = d3.select(this), prev = M.get(d.key);
+        tr(el, prev ? 0 : i * 35).attr("x", x(d.value) + 6);
+        countText(el, prev && prev.metric === vm.metric.key ? prev.v : (prev ? d.value : 0), d.value, vm.metric.fmt);
+      });
+    data.forEach(d => M.set(d.key, { y: y(d.key), w: x(d.value) - m.l, v: d.value, metric: vm.metric.key }));
   }
 
   function stateTip(d) {
@@ -837,9 +919,12 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
     const sel = vm.sel.state;
     const feats = vm.geo.features;
     const g = svg.append("g");
+    const M = mem("map");
+    const fillOf = f => byName.has(f.properties.name) ? color(byName.get(f.properties.name).value) : T.nodata;
     g.selectAll("path").data(feats).join("path")
       .attr("d", path)
-      .attr("fill", f => byName.has(f.properties.name) ? color(byName.get(f.properties.name).value) : T.nodata)
+      .attr("fill", f => M.get(f.properties.name) || (byName.has(f.properties.name) ? T.seq[0] : T.nodata))
+      .call(sel => tr(sel).attr("fill", fillOf))
       .attr("stroke", T.surface).attr("stroke-width", .8)
       .style("cursor", f => byName.has(f.properties.name) ? "pointer" : "default")
       .on("click", (ev, f) => { const d = byName.get(f.properties.name); if (d) App.setState(d.i); })
@@ -851,8 +936,13 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
     // selected state on top with an ink outline
     if (sel !== null) {
       const f = feats.find(f => f.properties.name === App.data.states[sel]);
-      if (f) g.append("path").attr("d", path(f)).attr("fill", "none").attr("stroke", T.ink).attr("stroke-width", 2).style("pointer-events", "none");
+      if (f) {
+        const o = g.append("path").attr("d", path(f)).attr("fill", "none").attr("stroke", T.ink).attr("stroke-width", 2)
+          .style("pointer-events", "none").attr("opacity", 0);
+        tr(o).attr("opacity", 1);
+      }
     }
+    feats.forEach(f => M.set(f.properties.name, fillOf(f)));
     // value labels on the 12 states (names are in the tooltip and the bar chart beside the map)
     const t = d3.scaleLinear([m.min, m.max], [0, 1]);
     const lab = svg.append("g").style("pointer-events", "none");
@@ -861,9 +951,35 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
       if (!d) continue;
       const [cx, cy] = path.centroid(f);
       const dark = t(d.value) > .55;
-      lab.append("text").attr("x", cx).attr("y", cy).attr("dy", ".35em").attr("text-anchor", "middle")
-        .attr("fill", dark ? T.surface : T.ink).style("font", `600 11px ${T.fontMono}`).text(m.fmt(d.value));
+      const el = lab.append("text").attr("x", cx).attr("y", cy).attr("dy", ".35em").attr("text-anchor", "middle")
+        .attr("fill", dark ? T.surface : T.ink).style("font", `600 11px ${T.fontMono}`);
+      const prev = M.get("v:" + d.key);
+      countText(el, prev && prev.metric === m.key ? prev.v : d.value, d.value, m.fmt);
+      M.set("v:" + d.key, { v: d.value, metric: m.key });
     }
+  }
+
+  // 100% stacked rows: each row slides to its new rank, each segment morphs from its previous span
+  function stackRows(id, rows, parts, colors, x, y) {
+    const M = mem(id), bh = y.bandwidth();
+    rows.attr("transform", d => `translate(0,${M.has(d.key) ? M.get(d.key).y - y(d.key) : 0})`);
+    tr(rows, 0, "move").attr("transform", "translate(0,0)");
+    rows.each(function (d, r) {
+      const gg = d3.select(this), prev = M.get(d.key), segs = [];
+      let acc = 0;
+      parts(d).forEach((v, j, arr) => {
+        const last = j === arr.length - 1;
+        const x0 = x(acc), wSeg = Math.max(0, x(acc + v) - x0 - (last ? 0 : 2)); // 2px surface gap
+        const from = prev ? prev.segs[j] : { x0: x(0), w: 0 };
+        gg.append("path").attr("fill", colors[j]).attr("d", seg(from.x0, from.w))
+          .call(p => tr(p, prev ? 0 : r * 40 + j * 60).attrTween("d", () => t =>
+            seg(from.x0 + (x0 - from.x0) * t, from.w + (wSeg - from.w) * t)));
+        function seg(a, ww) { return last ? hBarPath(a, y(d.key), ww, bh) : `M${a},${y(d.key)}h${ww}v${bh}h${-ww}Z`; }
+        segs.push({ x0, w: wSeg });
+        acc += v;
+      });
+      M.set(d.key, { y: y(d.key), segs });
+    });
   }
 
   /* ---------------- 4. case outcome by crime type (100% stacked) ---------------- */
@@ -878,26 +994,20 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
       .call(d3.axisBottom(x).ticks(5).tickFormat(d => d * 100 + "%").tickSize(0).tickPadding(8)).call(g => styleAxis(g));
     const sel = vm.sel.crime;
     const rows = svg.append("g").selectAll("g").data(data).join("g").style("cursor", "pointer")
-      .attr("opacity", d => sel === null || sel === d.i ? 1 : .35)
+      .attr("opacity", d => mem("pipe-o").get(d.key) ?? 1)
       .on("click", (ev, d) => App.setCrime(d.i))
       .on("pointermove", (ev, d) => tip(`<b>${d.label}</b> <span style="color:${T.ink3}">${d.key}</span>
           ${keys.map(([k, l], j) => row(l, fmt.pct(d[k]), T.pipe[j])).join("")}${row("คดีรวม", fmt.int(d.cases))}`, ev))
       .on("pointerleave", hideTip);
     rows.append("rect").attr("x", 0).attr("width", w).attr("y", d => y(d.key) - 3).attr("height", y.bandwidth() + 6).attr("fill", "transparent");
-    rows.each(function (d) {
-      let acc = 0;
-      const gg = d3.select(this);
-      keys.forEach(([k], j) => {
-        const x0 = x(acc), x1 = x(acc + d[k]);
-        const last = j === keys.length - 1;
-        const wSeg = Math.max(0, x1 - x0 - (last ? 0 : 2)); // 2px surface gap between segments
-        if (last) gg.append("path").attr("d", hBarPath(x0, y(d.key), wSeg, y.bandwidth())).attr("fill", T.pipe[j]);
-        else gg.append("rect").attr("x", x0).attr("y", y(d.key)).attr("width", wSeg).attr("height", y.bandwidth()).attr("fill", T.pipe[j]);
-        acc += d[k];
-      });
-      gg.append("text").attr("x", x(0) + 8).attr("y", y(d.key) + y.bandwidth() / 2).attr("dy", ".35em")
-        .attr("fill", T.surface).style("font", `600 11px ${T.fontMono}`).text(fmt.pct(d.convicted));
-    });
+    const prevConv = new Map([...mem("pipe-v")]);
+    stackRows("pipe", rows, d => keys.map(([k]) => d[k]), T.pipe, x, y);
+    rows.append("text").attr("x", x(0) + 8).attr("y", d => y(d.key) + y.bandwidth() / 2).attr("dy", ".35em")
+      .attr("fill", T.surface).style("font", `600 11px ${T.fontMono}`)
+      .each(function (d) { countText(d3.select(this), prevConv.get(d.key) ?? d.convicted, d.convicted, v => fmt.pct(v)); });
+    data.forEach(d => mem("pipe-v").set(d.key, d.convicted));
+    tr(rows, 0, "fade").attr("opacity", d => sel === null || sel === d.i ? 1 : .35);
+    data.forEach(d => mem("pipe-o").set(d.key, sel === null || sel === d.i ? 1 : .35));
     rows.append("text").attr("x", m.l - 8).attr("y", d => y(d.key) + y.bandwidth() / 2).attr("dy", ".35em")
       .attr("text-anchor", "end").attr("fill", T.ink2).style("font", `400 12px ${T.fontBody}`).text(d => d.label);
   }
@@ -928,10 +1038,17 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
       .on("pointermove", (ev, d) => tip(`<b>${fmt.state(App.data.states[d.s])} · ${fmt.crime(App.data.crimes[d.c])}</b>
           ${row("อาชญากรรม/แสนคน/ปี", fmt.num(d.rate, 2))}${row("คดีรวม 10 ปี", fmt.int(d.cases))}`, ev))
       .on("pointerleave", hideTip);
+    const first = !mem("heat").has("done");
+    const rowIdx = new Map(vm.heatStates.map((d, k) => [d.i, k]));
+    if (first && anim()) cells.attr("opacity", 0).transition().duration(DUR * .7).ease(ease)
+      .delay(d => (rowIdx.get(d.s) + d.c) * 28).attr("opacity", 1);
+    const on = d => (ss === d.s && (sc === null || sc === d.c)) || (sc === d.c && ss === null);
     cells.append("rect").attr("x", d => x(d.c)).attr("y", d => y(d.s)).attr("width", x.bandwidth()).attr("height", y.bandwidth())
       .attr("rx", 3).attr("fill", d => color(d.rate))
-      .attr("stroke", d => (ss === d.s && (sc === null || sc === d.c)) || (sc === d.c && ss === null) ? T.ink : "none")
-      .attr("stroke-width", 2);
+      .attr("stroke", T.ink).attr("stroke-width", 2).attr("stroke-opacity", d => mem("heat").get(d.s * 100 + d.c) ? 1 : 0)
+      .call(r => tr(r).attr("stroke-opacity", d => on(d) ? 1 : 0));
+    vm.heat.forEach(d => mem("heat").set(d.s * 100 + d.c, on(d)));
+    mem("heat").set("done", true);
     // high end of the ramp is far from the surface in both themes, so use surface-colored text there
     cells.append("text").attr("x", d => x(d.c) + x.bandwidth() / 2).attr("y", d => y(d.s) + y.bandwidth() / 2).attr("dy", ".35em")
       .attr("text-anchor", "middle").style("font", `500 11px ${T.fontMono}`).style("pointer-events", "none")
@@ -956,15 +1073,21 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
       .attr("x", v => x0(v[0]) + x0.bandwidth() / 2).attr("y", h - 8).attr("text-anchor", "middle")
       .attr("fill", T.ink2).style("font", `400 12px ${T.fontBody}`).text(v => v[1]);
     const g = svg.append("g").selectAll("g").data(vars).join("g").attr("transform", v => `translate(${x0(v[0])},0)`);
+    const first = !mem("cprof").has("done");
     g.selectAll("path").data(v => vm.clusters.map((c, i) => ({ v, c, i }))).join("path")
       .attr("d", d => vBarPath(x1(d.i), y(0), y(d.c.z[d.v[0]]), x1.bandwidth()))
+      .call(p => { if (first && anim()) p.attr("d", d => vBarPath(x1(d.i), y(0), y(0) - 0.01, x1.bandwidth()))
+        .transition().duration(DUR).delay(d => vars.findIndex(v => v === d.v) * 90 + d.i * 45).ease(ease)
+        .attrTween("d", d => { const z = d.c.z[d.v[0]]; return t => vBarPath(x1(d.i), y(0), y(z * t), x1.bandwidth()); }); })
       .attr("fill", d => T.cluster[d.i])
       .on("pointermove", (ev, d) => tip(`<b>${d.c.name}</b> · ${d.v[1]}
           ${row("ค่าเฉลี่ยกลุ่ม", fmt.num(d.c.mean[d.v[0]], 2))}${row("Z-score", (d.c.z[d.v[0]] > 0 ? "+" : "") + d.c.z[d.v[0]].toFixed(2), T.cluster[d.i])}`, ev))
       .on("pointerleave", hideTip);
+    mem("cprof").set("done", true);
   }
 
   /* ---------------- 7. cluster share per state (100% stacked) ---------------- */
+  // (cluster profile is global data: it only animates the first time it is drawn)
   function clusterState(vm) {
     const { svg, w, h } = frame("ch-cstate");
     const m = { t: 4, r: 12, b: 22, l: 104 };
@@ -975,22 +1098,14 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
       .call(d3.axisBottom(x).ticks(5).tickFormat(d => d * 100 + "%").tickSize(0).tickPadding(8)).call(g => styleAxis(g));
     const sel = vm.sel.state;
     const rows = svg.append("g").selectAll("g").data(data).join("g").style("cursor", "pointer")
-      .attr("opacity", d => sel === null || sel === d.i ? 1 : .35)
+      .attr("opacity", d => mem("cs-o").get(d.key) ?? 1)
       .on("click", (ev, d) => App.setState(d.i))
       .on("pointermove", (ev, d) => tip(`<b>${d.label}</b>${vm.clusters.map((c, j) => row(c.name, fmt.pct(d.share[j]), T.cluster[j])).join("")}`, ev))
       .on("pointerleave", hideTip);
     rows.append("rect").attr("x", 0).attr("width", w).attr("y", d => y(d.key) - 3).attr("height", y.bandwidth() + 6).attr("fill", "transparent");
-    rows.each(function (d) {
-      let acc = 0;
-      const gg = d3.select(this);
-      d.share.forEach((s, j) => {
-        const x0 = x(acc), x1 = x(acc + s), last = j === d.share.length - 1;
-        const wSeg = Math.max(0, x1 - x0 - (last ? 0 : 2));
-        if (last) gg.append("path").attr("d", hBarPath(x0, y(d.key), wSeg, y.bandwidth())).attr("fill", T.cluster[j]);
-        else gg.append("rect").attr("x", x0).attr("y", y(d.key)).attr("width", wSeg).attr("height", y.bandwidth()).attr("fill", T.cluster[j]);
-        acc += s;
-      });
-    });
+    stackRows("cstate", rows, d => d.share, T.cluster, x, y);
+    tr(rows, 0, "fade").attr("opacity", d => sel === null || sel === d.i ? 1 : .35);
+    data.forEach(d => mem("cs-o").set(d.key, sel === null || sel === d.i ? 1 : .35));
     rows.append("text").attr("x", m.l - 8).attr("y", d => y(d.key) + y.bandwidth() / 2).attr("dy", ".35em")
       .attr("text-anchor", "end").attr("fill", T.ink2).style("font", `400 12px ${T.fontBody}`).text(d => d.label);
   }
@@ -1006,6 +1121,8 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
     const m = { t: 26, r: 12, b: 30, l: 40 };
     const x = d3.scaleLinear([0, vm.scatterMax.x], [m.l, pw - m.r]).nice();
     const y = d3.scaleLinear([0, vm.scatterMax.y], [ph - m.b, m.t]).nice();
+    const key = `${vm.sel.state}|${vm.sel.crime}`, changed = mem("scatter").get("key") !== key;
+    mem("scatter").set("key", key);
     vm.clusters.forEach((c, k) => {
       const g = svg.append("g").attr("transform", `translate(${(k % cols) * pw},${Math.floor(k / cols) * ph})`);
       g.append("text").attr("x", m.l).attr("y", 14).attr("fill", T.ink).style("font", `600 12.5px ${T.fontBody}`).text(c.name + "  ·  n=" + fmt.int(vm.scatter.filter(p => p.k === k).length));
@@ -1018,9 +1135,11 @@ table.cmp thead th.here { color: var(--accent-ink); font-weight: 600; }
       const others = vm.scatter.filter(p => p.k !== k), mine = vm.scatter.filter(p => p.k === k);
       g.append("g").selectAll("circle").data(others).join("circle")
         .attr("cx", p => x(p.x)).attr("cy", p => y(p.y)).attr("r", 2).attr("fill", T.muted);
-      g.append("g").selectAll("circle").data(mine).join("circle")
+      const pts = g.append("g").selectAll("circle").data(mine).join("circle")
         .attr("cx", p => x(p.x)).attr("cy", p => y(p.y)).attr("r", 3).attr("fill", T.cluster[k]).attr("fill-opacity", .75)
         .attr("stroke", T.surface).attr("stroke-width", .6);
+      if (changed && anim()) pts.attr("r", 0).transition().duration(DUR).ease(d3.easeBackOut)
+        .delay(p => Math.min(700, (x(p.x) - m.l) * 1.6)).attr("r", 3);
       // nearest-point hover via Delaunay
       if (mine.length) {
         const del = d3.Delaunay.from(mine, p => x(p.x), p => y(p.y));

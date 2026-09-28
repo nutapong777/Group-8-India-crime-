@@ -171,13 +171,28 @@
   };
 
   /* ---------- DOM parts that do not depend on a chart library ---------- */
+  // numbers count from their previous value to the new one
+  const kpiPrev = {};
+  function countTo(id, to, f) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const from = kpiPrev[id] ?? 0;
+    kpiPrev[id] = to;
+    if (!App.animate || from === to) { el.textContent = f(to); return; }
+    const t0 = performance.now(), D = 650;
+    (function step(now) {
+      const t = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - t, 3);
+      el.textContent = f(from + (to - from) * e);
+      if (t < 1) requestAnimationFrame(step);
+    })(t0);
+  }
   function renderKpis(vm) {
     const k = vm.kpi;
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    set("kpi-cases", fmt.int(k.cases));
-    set("kpi-chg", fmt.pct(k.chgRate));
-    set("kpi-conv", fmt.pct(k.convRate));
-    set("kpi-rate", fmt.num(k.crimeRate, 1));
+    countTo("kpi-cases", k.cases, fmt.int);
+    countTo("kpi-chg", k.chgRate, v => fmt.pct(v));
+    countTo("kpi-conv", k.convRate, v => fmt.pct(v));
+    countTo("kpi-rate", k.crimeRate, v => fmt.num(v, 1));
     set("kpi-rate-sub", App.sel.crime === null ? "ทุกประเภทคดี ต่อแสนคนต่อปี" : fmt.crime(App.data.crimes[App.sel.crime]) + " ต่อแสนคนต่อปี");
     const scope = [App.sel.state === null ? "ทุกรัฐ" : fmt.state(App.data.states[App.sel.state]),
                    App.sel.crime === null ? "ทุกประเภทคดี" : fmt.crime(App.data.crimes[App.sel.crime])].join(" · ");
@@ -239,9 +254,12 @@
   }
 
   let raf = 0;
-  function update() {
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  // animate = false for redraws that are not data changes (window resize)
+  function update(animate = true) {
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
+      App.animate = animate && !reduceMotion.matches;
       const vm = App.viewModel();
       renderKpis(vm);
       renderClusterTable(vm);
@@ -279,10 +297,8 @@
 
     // redraw on resize and on theme change (light/dark)
     let rt = 0;
-    const ro = new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(update, 120); });
+    const ro = new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => update(false), 120); });
     ro.observe(document.getElementById("app"));
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update);
-    new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   }
 
   window.App = App;

@@ -144,7 +144,7 @@
               </ul></td>
               <td><ul class="con">
                 <li>ต้องเขียนเองทุกอย่าง ทั้งแกน tooltip legend แอนิเมชัน และการย่อขยายตามจอ</li>
-                <li>โค้ดยาวกว่า ใช้เวลาพัฒนานานกว่า</li>
+                <li>โค้ดยาวกว่ามาก (427 บรรทัด เทียบกับ 268) ใช้เวลาพัฒนานานกว่า</li>
                 <li>เรียนรู้ยาก ต้องเข้าใจ scale, selection และ data join</li>
                 <li>แผนที่ต้องเตรียมข้อมูลเอง เช่น เรียงทิศทางจุดของ polygon ให้ถูก</li>
               </ul></td>
@@ -153,7 +153,7 @@
               <td>Apache ECharts 5 <span class="pill win">หน้านี้</span></td>
               <td><ul class="pro">
                 <li>กำหนดกราฟด้วย option object เขียนสั้นและเร็ว</li>
-                <li>มี tooltip, legend, แอนิเมชัน, visualMap และไฮไลต์เมื่อชี้มาให้ในตัว</li>
+                <li>มี tooltip, legend, visualMap และไฮไลต์เมื่อชี้มาให้ในตัว แอนิเมชันเปลี่ยนสถานะได้ด้วยการตั้งค่าเพียงไม่กี่บรรทัด</li>
                 <li>แผนที่ใช้ได้ทันทีด้วย registerMap + series แบบ map</li>
                 <li>เรียนรู้ง่าย เอกสารและตัวอย่างเยอะ</li>
               </ul></td>
@@ -171,11 +171,11 @@
         <table class="cmp">
           <thead><tr><th>ประเด็น</th><th>D3.js v7</th><th class="here">ECharts 5 <span class="pill win">หน้านี้</span></th></tr></thead>
           <tbody>
-            <tr><td>โค้ดวาดกราฟ 9 ชิ้น</td><td class="num">348 บรรทัด</td><td class="num here">265 บรรทัด <span class="pill win">สั้นกว่า</span></td></tr>
+            <tr><td>โค้ดวาดกราฟ 9 ชิ้น</td><td class="num">427 บรรทัด</td><td class="num here">268 บรรทัด <span class="pill win">สั้นกว่า</span></td></tr>
             <tr><td>ขนาดไลบรารี (gzip)</td><td class="num">~93 KB <span class="pill win">เล็กกว่า</span></td><td class="num here">~334 KB</td></tr>
-            <tr><td>เวลาวาดใหม่เมื่อเปลี่ยนตัวกรอง</td><td class="num">~42 ms <span class="pill win">เร็วกว่า</span></td><td class="num here">~130 ms</td></tr>
+            <tr><td>เวลาวาดใหม่เมื่อเปลี่ยนตัวกรอง</td><td class="num">~39 ms <span class="pill win">เร็วกว่า</span></td><td class="num here">~113 ms</td></tr>
             <tr><td>Tooltip / crosshair</td><td>เขียนเอง</td><td class="here">มีในตัว <span class="pill win">ง่ายกว่า</span></td></tr>
-            <tr><td>แอนิเมชัน</td><td>ต้องเขียนเอง (หน้านี้ไม่ได้ใส่)</td><td class="here">มีในตัว <span class="pill win">ง่ายกว่า</span></td></tr>
+            <tr><td>แอนิเมชัน</td><td>เขียนเองด้วย d3.transition (เลื่อนตำแหน่ง ยืดแท่ง นับตัวเลข)</td><td class="here">มีในตัว <span class="pill win">ง่ายกว่า</span></td></tr>
             <tr><td>แผนที่</td><td>projection + geoPath เขียนเอง</td><td class="here">registerMap <span class="pill win">ง่ายกว่า</span></td></tr>
             <tr><td>ความยืดหยุ่นของรูปทรง</td><td>ไม่จำกัด <span class="pill win">ดีกว่า</span></td><td class="here">ในขอบเขต option</td></tr>
             <tr><td>ความยากในการเรียนรู้</td><td>สูง</td><td class="here">ต่ำ <span class="pill win">ง่ายกว่า</span></td></tr>
@@ -183,7 +183,7 @@
           </tbody>
         </table>
       </div>
-      <p class="cmp-note">ตัวเลขวัดด้วย Chromium ความกว้าง 1280px (ค่ามัธยฐานจากการเปลี่ยนตัวกรองรัฐ 12 ครั้ง) ผลจะต่างไปตามเครื่อง เวลาจริงของหน้านี้ดูได้ที่ท้ายหน้า</p>
+      <p class="cmp-note">ตัวเลขวัดด้วย Chromium ความกว้าง 1280px (ค่ามัธยฐานจากการเปลี่ยนตัวกรองรัฐ 12 ครั้ง เป็นเวลาสร้างกราฟ ไม่รวมเวลาแอนิเมชัน) ผลจะต่างไปตามเครื่อง เวลาจริงของหน้านี้ดูได้ที่ท้ายหน้า</p>
     </div>
 
     <footer class="foot">
